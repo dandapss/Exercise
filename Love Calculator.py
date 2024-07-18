@@ -42,6 +42,12 @@ else:
     print(f"Your total score is {Score}")
     print("#######################")
 
+# random Love Score less than certain number
+import random
+
+random_number = random.random() * 5
+print(f"Your love score is {random_number}")
+
 
 # Treasure Island game
 
