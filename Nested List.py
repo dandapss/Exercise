@@ -6,6 +6,8 @@ vegetables = ["Spinach", "Kale", "Tomatoes", "Celery", "Potatoes"]
 
 dozen = [fruits, vegetables]
 print(dozen)
+
+# If there are two or more lists in a list, the first [] means which list to select and the second one means which one of the list. (Of course, both of them start from 0)
 print(dozen[0][1])
 
 
@@ -48,9 +50,13 @@ if number == 3:
         print(f"Wrong position {position}")
 
 ####### easier way
+# I have to type one of A, B, or C so make list of them
 # abc = ["A", "B", "C"]
+# Check which of the letter I typed and where of the list is in
 # letter_index = abc.index(letter)
+# The index starts from 1 so subtract 1 from the index
 # number_index = int(number - 1)
+# Use nested list to change info in list.
 # map[number_index][letter_index] = "X"
 
 print(f"{line1}\n{line2}\n{line3}")
