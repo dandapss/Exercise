@@ -19,15 +19,19 @@ print(display)
 
 while wrong > 0 and "_" in display:
     choice = input("What is your letter?: ")
-    if choice in word:
+    if choice in word and choice not in display:
         for position in range(length):
             each_letter = word[position]
             if each_letter == choice:
                 display[position] = choice
         print(display)
+    elif choice in display:
+        print("Do not repeat the same letter, negative 1 point for dumbness")
+        wrong-=1
+        print(f"Your remaining life is {wrong}")
     else:
         wrong-=1
-        print(wrong)
+        print(f"Your remaining life is {wrong}")
 
 if "_" not in display:
     print("You saved your man")
@@ -35,6 +39,6 @@ elif wrong == 0:
     print("Your man died, game lose")
 
 # 24.07.29
-# Things to fix later on
-# 1. If the user repeat the same letter, give negative point
+# Things to add later on
+# 1. If the user repeat the same letter, give negative point -- done
 # 2. Count only once of the repeated letter in the death count.
