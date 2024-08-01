@@ -13,7 +13,21 @@ display = []
 for letter in range(length):
     display+="_"
 # death count of the game
-wrong = length
+Mode = input("Choose your mode. Type 'EASY' or 'HARD' \n")
+mode = Mode.lower()
+if mode == "easy":
+    wrong = length
+elif mode == "hard":
+    wrong_list = []
+    for letter in word:
+        if letter not in wrong_list:
+            wrong_list.append(letter)
+    wrong = len(wrong_list)
+else:
+    print("I gave only two options, but you choose neither. Game lose by not following the rule")
+    exit()
+    
+print(f"This is your death count: {wrong}")
 print(display)
 ###############################################
 
@@ -41,4 +55,4 @@ elif wrong == 0:
 # 24.07.29
 # Things to add later on
 # 1. If the user repeat the same letter, give negative point -- done
-# 2. Count only once of the repeated letter in the death count.
+# 2. Count only once of the repeated letter in the death count. -- done
