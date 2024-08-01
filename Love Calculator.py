@@ -49,6 +49,48 @@ random_number = random.random() * 5
 print(f"Your love score is {random_number}")
 
 
+# Love Calculator ver.2 (using FOR)
+print("Welcome to the Love Calculator\n Type your name and partner's to check the score")
+name1 = input("Your name: ")
+name2 = input("Your partner's name: ")
+fullname = name1 + " " + name2
+print(fullname)
+Upper_case = fullname.upper()
+total_TRUE = 0
+for letter in "TRUE":
+    # print(letter)
+    if Upper_case.count(letter) > 0:
+        num = Upper_case.count(letter)
+        print(f"{letter} occures {num} time(s)")
+        total_TRUE+=num
+        # num=0
+    else:
+        print(f"{letter} is not in name ")
+print(f"   The TRUE score is {total_TRUE}")
+total_LOVE = 0
+for letter in "LOVE":
+    # print(letter)
+    if Upper_case.count(letter) > 0:
+        num = Upper_case.count(letter)
+        print(f"{letter} occures {num} time(s)")
+        total_LOVE+=num
+        # num=0
+    else:
+        print(f"{letter} is not in name ")
+print(f"   The LOVE score is {total_LOVE}")
+True_Score = total_TRUE*10
+Score = True_Score + total_LOVE
+
+if Score < 10 or Score > 90:
+    print(f"\nYour score is {Score}, you go together like coke and mentos")
+elif Score >=40 and Score <= 50:
+    print(f"\nYour score is {Score}, you are alright together")
+else:
+    print("\n#######################")
+    print(f"Your total score is {Score}")
+    print("#######################")
+
+
 # Treasure Island game
 
 print("Welcome to Treasure Island.\nYour mission is to find the treasure.\n")
