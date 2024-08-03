@@ -9,11 +9,14 @@ for each in allow:
         list2.append(square)
     list.append(list2)
 
-lengg = len(list[0])
-for first in list:
-    place = list.index(first)
-    first = list[lengg-place]
+length = len(list[0])
+for first_list in list:
+    place = list.index(first_list)
+    first_list = list[length - place]
+    
 print(list)
+
+
 
 
 # not done.. still in progress
