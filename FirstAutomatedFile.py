@@ -21,6 +21,9 @@ def extract_info(pdf_folder, key_dict, output_excel):
                     cleaned_list = [item for item in lines if item and str(item).strip()]
                     print(f"This is splitted lines: {cleaned_list}")
                     for line in cleaned_list:
+                        ############################################################### 03/19/25
+                        # What if instead of make cleaned_list, try <if line is not "">
+                        ###############################################################
                         if line:
                             print(f"This is line: {line}")
                             lower_line = line.lower()
@@ -28,7 +31,13 @@ def extract_info(pdf_folder, key_dict, output_excel):
                             for column, keyword in key_dict.items():
                                 print(f"This is column: {column}")
                                 print(f"This is keyword: {keyword}")
+                                ############################################################################ 03/19/25
+                                # Need to understand this part <k in lower_line for k in keyword>
+                                ############################################################################
                                 if any(k in lower_line for k in keyword):
+                                    ############################################################################################################## 03/19/25
+                                    # What if I also want to split empty space? Simply just add one more split? or change something inside of [ ]?
+                                    ##############################################################################################################
                                     extracted_text = re.split(r'[:=]', line)
                                     print(f"This is extracted_text: {extracted_text}")
                                     extracted_data.append([filename,column,keyword,line.strip(),extracted_text])
@@ -42,7 +51,13 @@ def extract_info(pdf_folder, key_dict, output_excel):
         print(f"✅ 엑셀 파일 저장 완료: {output_excel}")
     else:
         print("❌ 추출된 데이터가 없습니다.")
-
+############################################################################################################## 03/19/25
+# To add both .pdf and .xlsx 
+# Final_Data = []
+# Final_Data.append(extracted_data_for_pdf)
+# Final_Data.append(extracted_data_for_xlsx)
+# if Final_Data: bla bla bla
+##############################################################################################################
 
 key_dict = {
     "name" : ["solomon", "LG Chem", "solomon"],
