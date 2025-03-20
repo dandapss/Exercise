@@ -4,12 +4,12 @@ import pandas as pd
 import re
 import pdfplumber
 
-def extract_info(pdf_folder, key_dict, output_excel):
+def extract_info(folder_path, key_dict, output_excel):
     extracted_data = []
 
-    for filename in os.listdir(pdf_folder):
+    for filename in os.listdir(folder_path):
         if filename.lower().endswith(".pdf"):
-            file_path = os.path.join(pdf_folder, filename)
+            file_path = os.path.join(folder_path, filename)
 
             try:
                 doc = fitz.open(file_path)
@@ -23,6 +23,7 @@ def extract_info(pdf_folder, key_dict, output_excel):
                     for line in cleaned_list:
                         ############################################################### 03/19/25
                         # What if instead of make cleaned_list, try <if line is not "">
+                        # + it works but could only resolve either " " or ""      ##### 03/20/25
                         ###############################################################
                         if line:
                             print(f"This is line: {line}")
@@ -38,9 +39,14 @@ def extract_info(pdf_folder, key_dict, output_excel):
                                     ############################################################################################################## 03/19/25
                                     # What if I also want to split empty space? Simply just add one more split? or change something inside of [ ]?
                                     ##############################################################################################################
-                                    extracted_text = re.split(r'[:=]', line)
+                                    extracted_text = re.split(r'[:=]', line)[1].strip()
                                     print(f"This is extracted_text: {extracted_text}")
-                                    extracted_data.append([filename,column,keyword,line.strip(),extracted_text])
+                                    splitted_data = extracted_text.split()
+                                    print(f"This is splitted data: {splitted_data}")
+                                    if len(splitted_data) > 2:
+                                        extracted_data.append([filename,column,keyword,line.strip(),splitted_data[1]])
+                                    else:
+                                        extracted_data.append([filename,column,keyword,line.strip(),extracted_text])
 
             except Exception as e:
                 print(f"Error reading {filename}: {e}")
@@ -51,6 +57,7 @@ def extract_info(pdf_folder, key_dict, output_excel):
         print(f"✅ 엑셀 파일 저장 완료: {output_excel}")
     else:
         print("❌ 추출된 데이터가 없습니다.")
+
 ############################################################################################################## 03/19/25
 # To add both .pdf and .xlsx 
 # Final_Data = []
@@ -60,11 +67,11 @@ def extract_info(pdf_folder, key_dict, output_excel):
 ##############################################################################################################
 
 key_dict = {
-    "name" : ["solomon", "LG Chem", "solomon"],
-    "car" : ["benz", "audi"]
+    "name" : ["sooseob", "LG Chem"],
+    "car" : ["benz", "Austin", "guatemala"]
 }
 
-pdf_folder = r"C:\Users\82109\Desktop\개인\Python Test"
+folder_path = r"C:\Users\82109\Desktop\개인\Python Test"
 output_excel = r"C:\Users\82109\Desktop\개인\Python Test\date.xlsx"
 
-extract_info(pdf_folder, key_dict, output_excel)
+extract_info(folder_path, key_dict, output_excel)
