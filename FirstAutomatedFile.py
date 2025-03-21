@@ -38,7 +38,8 @@ def extract_info(folder_path, key_dict, output_excel):
                                 if any(k in lower_line for k in keyword):
                                     ############################################################################################################## 03/19/25
                                     # What if I also want to split empty space? Simply just add one more split? or change something inside of [ ]?
-                                    ##############################################################################################################
+                                    # It might work just by adding one more split. But in my case, I need to check the criteria of extracted text. 
+                                    ############################################################################################################## 03/21/25
                                     extracted_text = re.split(r'[:=]', line)[1].strip()
                                     print(f"This is extracted_text: {extracted_text}")
                                     splitted_data = extracted_text.split()
