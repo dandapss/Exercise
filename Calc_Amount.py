@@ -24,22 +24,43 @@ def get_or_create_sheet(wb, sheet_name):
     
     ws = wb.create_sheet(sheet_name)
 
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
+        ws.column_dimensions[col].width = 15
+
     # 첫 번째 행: 파이썬 파일 돌린 시간
     ws.merge_cells('B1:H1')
     ws['B1'] = datetime.now()
-    ws['B1'].alignment = Alignment(horizontal='center', vertical='bottom')
+    ws['B1'].alignment = Alignment(horizontal='center', vertical='center')
     ws['B1'].font = Font(bold=True)
 
     # 두 번째 행: 뭐 적어야 되는지 모름
-    ws.append("Lee Jun Hyeok the Master of Logistics")
+    ws.merge_cells('B2:H2')
+    ws.row_dimensions[2].height = 30
+    ws['B2'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B2'].font = Font(bold=True)
+    ws['B2'] = "Lee Jun Hyeok the Master of Logistics"
 
     # 세 번째 행: 인바운드 & 아웃 바운드
     ws.merge_cells('B3:D3')
+    Green_Fill = PatternFill(start_color="00FF00", end_color="FF9999", fill_type="mediumGray")
+    ws['B3'].fill = Green_Fill
+    ws['B3'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B3'].font = Font(bold=True)
+    ws['B3'] = "Inbound"
+
     ws.merge_cells('F3:H3')
+    Red_Fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="mediumGray")
+    ws['F3'].fill = Red_Fill
+    ws['F3'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['F3'].font = Font(bold=True)
+    ws['F3'] = "Outbound"
     
     # 네 번째 행: 열 제목(데이터 종류)
     ws.append(["Month", "PO No", "Date", "QTY (MT)", "On Stock", "QTY (MT)", "Date", "PO No"])
-    ws['B4'].font = Font(bold=True)
+    for col in range(1,9):
+        cell = ws.cell(row=4, column=col)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center', vertical='center')        
     
     # 다섯 번째 행: 빈 값
     ws.append([""] * 8)
@@ -83,13 +104,48 @@ def process_samvardhana(text, filename, ws):
                     qty = int(quantity)/100
                     written_date = f"{extracted_text[2][:2]}-{extracted_text[2][2:4]}-{extracted_text[2][4:]}"
                     written_month = f"{mon(extracted_text[2][2:4])}-{extracted_text[2][6:]}"
-                    ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), "", "On Stock", qty, written_date, "PO Num"])
+                    ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), "", "On Stock", qty, written_date, "PO No"])
                     print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
+
+
+def process_samvardhana2(text, filename, ws):
+    """Samvardhana Motherson 문서를 처리하는 함수"""
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    while i < len(cleaned_list):
+        if cleaned_list[i].strip().startswith("D") and i + 1 < len(cleaned_list):
+            
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} {cleaned_list[i+3]} {cleaned_list[i+4]}")
+            print(f"@!@!@!@!@!@!2 {merge_lines}")
+            i+=5
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        
+        if line.startswith("W ") or line.startswith("D"):
+            if "Date" not in line:
+                if len(extracted_text) >= 5:
+                    quantity = extracted_text[3]
+                    if quantity.isdigit() and int(quantity) > 0:
+                        qty = float(quantity)/100000
+                        written_date = f"{extracted_text[1][:2]}-{extracted_text[1][2:4]}-{extracted_text[1][4:]}"
+                        written_month = f"{mon(extracted_text[1][2:4])}-{extracted_text[1][6:]}"
+                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), "", "On Stock", qty, written_date, "PO No"])
+                        print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
 
 
 ### 색상 추가 부분!! 필요 없을 경우 삭제
 def apply_conditional_formatting(ws, max_row):
     """D3 값을 기준으로 D4:D1000 범위에 조건부 서식 적용"""
+
+    # if max_row is None or max_row < 7:
+    #     max_row = 100
     
     # 색상 정의
     green_fill = PatternFill(start_color="00FF00", end_color="00FF00", fill_type="solid")  # 초록색
@@ -98,24 +154,24 @@ def apply_conditional_formatting(ws, max_row):
     red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")  # 빨간색
 
     # 범위 정의
-    data_range = f"E7:E{max_row}"
+    data_range = f"E6:E{max_row}"
 
     # 조건부 서식 추가 (D3을 기준으로 계산)
     ws.conditional_formatting.add(
         data_range,
-        FormulaRule(formula=["E4>=E$3*0.6"], stopIfTrue=True, fill=green_fill)  # 60% 이상 초록색
+        FormulaRule(formula=["E6>=E$5*0.6"], stopIfTrue=True, fill=green_fill)  # 60% 이상 초록색
     )
     ws.conditional_formatting.add(
         data_range,
-        FormulaRule(formula=["AND(E4>=E$3*0.4, E4<E$3*0.6)"], stopIfTrue=True, fill=yellow_fill)  # 40% 이상 노란색
+        FormulaRule(formula=["AND(E6>=E$5*0.4, E6<E$5*0.6)"], stopIfTrue=True, fill=yellow_fill)  # 40% 이상 노란색
     )
     ws.conditional_formatting.add(
         data_range,
-        FormulaRule(formula=["AND(E4>0, E4<E$3*0.4)"], stopIfTrue=True, fill=orange_fill)  # 40% 미만 주황색
+        FormulaRule(formula=["AND(E6>0, E6<E$5*0.4)"], stopIfTrue=True, fill=orange_fill)  # 40% 미만 주황색
     )
     ws.conditional_formatting.add(
         data_range,
-        FormulaRule(formula=["E4<0"], stopIfTrue=True, fill=red_fill)  # 음수(마이너스 값) 빨간색
+        FormulaRule(formula=["E6<0"], stopIfTrue=True, fill=red_fill)  # 음수(마이너스 값) 빨간색
     )
     # 0인 경우 색상 없음 (기본값 유지)
 
@@ -141,14 +197,20 @@ def extract_info(folder_path, output_excel):
                 for page in doc:
                     text = page.get_text("text")
                     print(f"📄 {filename} - 페이지 텍스트 읽음")
+                    print(f"@@@@@@@@@@@@@ {text}")
 
                     if "SMP Ibérica" in text:
                         ws = get_or_create_sheet(wb, "SMP Ibérica")
                         process_smp_iberica(text, filename, ws)
 
-                    elif "Samvardhana Motherson" in text:
-                        ws = get_or_create_sheet(wb, "Samvardhana Motherson")
+                    elif "Samvardhana Motherson Peguform" in text:
+                        ws = get_or_create_sheet(wb, "Samvardhana Motherson Peguform")
                         process_samvardhana(text, filename, ws)
+
+                    elif "Samvardhana Motherson Innovative" in text:
+                        print(f"@@@@@@@@@@@@@ text")
+                        ws = get_or_create_sheet(wb, "Samvardhana Motherson Innovative")
+                        process_samvardhana2(text, filename, ws)
 
                     else:
                         print(f"⚠️ {filename}: 지정된 키워드 없음. 스킵.")
@@ -166,7 +228,7 @@ def extract_info(folder_path, output_excel):
                 last_row_f = row
                 break
 
-        for row in range(7, last_row_f + 1):
+        for row in range(6, last_row_f + 1):
             F_value = f"F{row}"
             if F_value:
                 ws[f"E{row}"] = f"=E{row-1}-F{row}"
@@ -174,10 +236,14 @@ def extract_info(folder_path, output_excel):
         ## 색상 추가!! 필요 없을 경우 아래 한줄만 삭제
         apply_conditional_formatting(ws, last_row_f)  # 각 시트에 조건부 서식 적용
 
+
+
     wb.save(output_excel)
     print(f"✅ 함수 추가 완료: {output_excel}")
 
     print(f"✅ 엑셀 파일 저장 완료: {output_excel}")
+       
+
 
 
 
