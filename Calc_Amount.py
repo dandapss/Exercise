@@ -301,3 +301,52 @@ output_excel = os.path.join(folder_path, "date.xlsx")
 
 extract_info(folder_path, output_excel)
 
+
+################################################################################################################
+from openpyxl.styles import PatternFill
+from openpyxl.formatting.rule import FormulaRule
+import openpyxl
+
+def apply_conditional_formatting(ws):
+    """D3 값을 기준으로 D4:D1000 범위에 조건부 서식 적용"""
+    
+    # 색상 정의
+    green_fill = PatternFill(start_color="00FF00", end_color="00FF00", fill_type="solid")  # 초록색
+    yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # 노란색
+    orange_fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")  # 주황색
+    red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")  # 빨간색
+
+    # 범위 정의
+    data_range = "D4:D1000"
+
+    # 조건부 서식 추가 (D3을 기준으로 계산)
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["D4>=D$3*0.6"], stopIfTrue=True, fill=green_fill)  # 60% 이상 초록색
+    )
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["AND(D4>=D$3*0.4, D4<D$3*0.6)"], stopIfTrue=True, fill=yellow_fill)  # 40% 이상 노란색
+    )
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["AND(D4>0, D4<D$3*0.4)"], stopIfTrue=True, fill=orange_fill)  # 40% 미만 주황색
+    )
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["D4<0"], stopIfTrue=True, fill=red_fill)  # 음수(마이너스 값) 빨간색
+    )
+    # 0인 경우 색상 없음 (기본값 유지)
+
+# 📝 엑셀 파일 로드 & 적용
+output_excel = "C:/Users/82109/Desktop/개인/Python Test/date.xlsx"
+wb = openpyxl.load_workbook(output_excel)
+
+for sheet_name in wb.sheetnames:
+    ws = wb[sheet_name]
+    apply_conditional_formatting(ws)  # 각 시트에 조건부 서식 적용
+
+wb.save(output_excel)
+print(f"✅ 조건부 서식 적용 완료: {output_excel}")
+
+
