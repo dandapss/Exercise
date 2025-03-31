@@ -174,3 +174,130 @@ filename = f"Result_{Datetime}.xlsx"
 output_excel = os.path.join(folder_path, "date.xlsx")
 
 extract_info(folder_path,output_excel)
+
+
+
+
+
+#############################################################################################################################
+
+import os
+import fitz  # PyMuPDF
+import re
+import openpyxl
+from datetime import datetime
+
+
+def mon(text):
+    """월(MM)을 영문 월(JAN, FEB 등)로 변환"""
+    months = {
+        "01": "JAN", "02": "FEB", "03": "MAR", "04": "APR", "05": "MAY", "06": "JUN",
+        "07": "JUL", "08": "AUG", "09": "SEP", "10": "OCT", "11": "NOV", "12": "DEC"
+    }
+    return months.get(text, "")
+
+
+def get_or_create_sheet(wb, sheet_name):
+    """Excel 시트를 가져오거나 없으면 새로 생성"""
+    if sheet_name in wb.sheetnames:
+        return wb[sheet_name]
+    
+    ws = wb.create_sheet(sheet_name)
+
+    # 첫 번째 행: 빈 값
+    ws.append([""] * 8)
+    
+    # 두 번째 행: 열 제목(데이터 종류)
+    ws.append(["파일명", "월", "날짜", "단위", "재고 상태", "수량", "작성일", "PO 번호"])
+    
+    # 세 번째 행: 빈 값
+    ws.append([""] * 8)
+
+    return ws
+
+
+def process_smp_iberica(text, filename, ws):
+    """SMP Ibérica 문서를 처리하는 함수"""
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    
+    for line in cleaned_list:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        
+        if line.startswith("W ") or line.startswith("D "):
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[2] if len(extracted_text) == 3 else extracted_text[3]
+                if quantity.isdigit() and int(quantity) > 0:
+                    written_date = f"{extracted_text[1][:2]}-{extracted_text[1][2:4]}-{extracted_text[1][4:]}"
+                    written_month = f"{mon(extracted_text[1][2:4])}-{extracted_text[1][6:]}"
+                    ws.append([filename, written_month, datetime.now().strftime("%Y-%m-%d"), "Whole Number", "On Stock", quantity, written_date, "PO No"])
+                    print(f"[SMP Ibérica] 데이터 추가: {quantity}")
+
+
+def process_samvardhana(text, filename, ws):
+    """Samvardhana Motherson 문서를 처리하는 함수"""
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    
+    for line in cleaned_list:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        
+        if line.startswith("M ") or line.startswith("N "):
+            if len(extracted_text) >= 4:
+                quantity = extracted_text[3]
+                if quantity.isdigit() and int(quantity) > 0:
+                    written_date = f"{extracted_text[2][:2]}-{extracted_text[2][2:4]}-{extracted_text[2][4:]}"
+                    written_month = f"{mon(extracted_text[2][2:4])}-{extracted_text[2][6:]}"
+                    ws.append([filename, written_month, datetime.now().strftime("%Y-%m-%d"), "Whole Number", "Stock", quantity, written_date, "PO Num"])
+                    print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
+
+
+def extract_info(folder_path, output_excel):
+    """폴더 내 모든 PDF를 읽고 키워드별로 처리"""
+    extracted_data = []
+
+    # 기존 Excel 파일이 있으면 로드, 없으면 새 파일 생성
+    if os.path.exists(output_excel):
+        wb = openpyxl.load_workbook(output_excel)
+    else:
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)  # 기본 생성되는 'Sheet' 삭제
+
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith(".pdf"):
+            file_path = os.path.join(folder_path, filename)
+
+            try:
+                doc = fitz.open(file_path)
+
+                for page in doc:
+                    text = page.get_text("text")
+                    print(f"📄 {filename} - 페이지 텍스트 읽음")
+
+                    if "SMP Ibérica" in text:
+                        ws = get_or_create_sheet(wb, "SMP Ibérica")
+                        process_smp_iberica(text, filename, ws)
+
+                    elif "Samvardhana Motherson" in text:
+                        ws = get_or_create_sheet(wb, "Samvardhana Motherson")
+                        process_samvardhana(text, filename, ws)
+
+                    else:
+                        print(f"⚠️ {filename}: 지정된 키워드 없음. 스킵.")
+
+            except Exception as e:
+                print(f"❌ {filename} 처리 중 오류 발생: {e}")
+
+    # Excel 파일 저장
+    wb.save(output_excel)
+    print(f"✅ 엑셀 파일 저장 완료: {output_excel}")
+
+
+# 실행
+folder_path = r"C:\Users\82109\Desktop\개인\Python Test"
+output_excel = os.path.join(folder_path, "date.xlsx")
+
+extract_info(folder_path, output_excel)
+
