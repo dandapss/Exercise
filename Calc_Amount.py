@@ -4,7 +4,7 @@ import pandas as pd
 import re
 import pdfplumber
 from datetime import datetime
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 
 
 def mon(text):
@@ -14,14 +14,17 @@ def mon(text):
 
 def sheet_name(wb, text):
     if text in wb.sheetnames:
-        return wb[sheet_name]
+        return wb[text]
     else:
-        return wb.create_sheet(title=text)
-
-
+        ws = wb.create_sheet(text)
+        return ws
 
 def extract_info(folder_path,output_excel):
     extracted_data = []
+    wb = load_workbook(output_excel)
+    sheet_title = "Default"
+    #################################################
+    # wb 사용할수 있도록 variable 이든 변수든 뭐든 설정 해야함. 그러면 sheet 가능할듯듯
 
     for filename in os.listdir(folder_path):
         if filename.lower().endswith(".pdf"):
@@ -29,32 +32,36 @@ def extract_info(folder_path,output_excel):
 
             try:
                 doc = fitz.open(file_path)
-
                 for page in doc:
                     text = page.get_text("text")
                     print(f"This is extracted text: {text}")
 
-
                     if "SMP Ibérica" in text:
+                        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                         if sheet_title == "Default" or sheet_title.startswith("Sheet"):
+                            print("phase #1")
                             sheet_title = "SMP Ibérica"
+                            
+                        elif sheet_title == "SMP Ibérica":
+                            print("phase #2")
                         else:
-                            return wb.create_sheet(title="SMP Ibérica")
+                            print("phase #3")
+                            sheet_name(wb, "SMP Ibérica")
 
-                        
                         lines = text.replace(",", "").replace(".","").split("\n")
+                        print("lineslineslineslineslineslineslineslineslineslineslineslineslineslineslines")
                         # 아래에서 clean이 안된상태로 나와 다시 strip 해줘야함.. 왜 필요?
                         cleaned_list = [item for item in lines if item and str(item).strip()]
                         i = 0
                         merge_lines = []
                         while i < len(cleaned_list):
                             if cleaned_list[i].strip().startswith("W ") and len(cleaned_list[i]) == 2:
-                                merge_lines.append(f"{cleaned_list[i]}{cleaned_list[i+1]}")
+                                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]}")
                                 i+=2
                             else:
                                 merge_lines.append(str(cleaned_list[i]))
                                 i += 1
-
+                        print("cleaned_listcleaned_listcleaned_listcleaned_listcleaned_listcleaned_listcleaned_listcleaned_listcleaned_list")
                         for line in merge_lines:
                             extracted_texts = re.split(r'[ ]', line)
                             extracted_text = [item for item in extracted_texts if item and str(item).strip()]
@@ -78,11 +85,16 @@ def extract_info(folder_path,output_excel):
 
 
                     elif "Samvardhana Motherson Peguform" in text:
+                        print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
                         if sheet_title == "Default" or sheet_title.startswith("Sheet"):
                             sheet_title = "Samvardhana Motherson Peguform"
+                        elif sheet_title.startswith("Samvardhana"):
+                            print("Stay")
                         else:
-                            wb.create_sheet(title="Samvardhana Motherson Peguform")
-
+                            print("phase #3")
+                            ############# 03.31.2025 요 아래가 안돈다!!!!
+                            print(wb.sheetnames)
+                            sheet_name(wb, "Samvardhana")
                         
                         lines = text.replace(",", "").replace(".","").split("\n")
                         # 아래에서 clean이 안된상태로 나와 다시 strip 해줘야함.. 왜 필요?
