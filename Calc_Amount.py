@@ -315,8 +315,8 @@ def process_PLASTICOS(text, filename, ws):
     for line in cleaned_list:
         extracted_texts = re.split(r'\s+', line)
         extracted_text = [item for item in extracted_texts if item.strip()]
-        print(f"@@@@@@@@@@@@@@@line {line}")
-        print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
 
         if "P/O" in line and "#:" in line:
             if int(extracted_text[7]) > 0:
@@ -634,6 +634,7 @@ def process_BoryszewKunststofftechnik(text, filename, ws):
 # "15) 15.01.2025 Bestellung Nr. 7000533558 (003)"   &   "8) 05.03.2025 Bestellung Nr. 7000540404"
 # Quantity 빼고는 처음 받은 변수를 저장하게 되어 있음.
 # 해당 조건 추가 필요시 모든 코드 수정 필요.
+# 04.08.25 추가 임시 저장용 변수 추가 및 하기에서 내용 확인 검증 진행.
 def process_ProXAutomotiveAG(text, filename, ws):
     """ProX Automotive AG 문서를 처리하는 함수"""
     print(f"📄 Processing file: {filename}")
@@ -676,16 +677,7 @@ def process_ProXAutomotiveAG(text, filename, ws):
                 qty = float(quantity) / 1000000
                 if current_date and current_pno:
                     print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {current_date}, {current_pno}")
-                    ws.append([
-                        current_month,
-                        filename,
-                        datetime.now().strftime("%Y-%m-%d"),
-                        filename,
-                        "On Stock",
-                        qty,
-                        current_date,
-                        current_pno
-                    ])
+                    ws.append([current_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, current_date, current_pno])
                 else:
                     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
 
