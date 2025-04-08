@@ -1,3 +1,14 @@
+########################################################################################
+################################ 초기 세팅 방법 ############################################
+### 1. https://www.python.org/downloads/ 설치
+### 2. 해당 exe 설치 진행 시 아래에 administrator 실행 및 PATH 추가 선택
+### 3. 동일 파일에 추가 되어 있는 파일 설치 pip install "file.whl" 실행
+### 4. .py 파일을 notepad로 실행 시켜 pdf 파일 및 excel 파일 위치 설정
+### 5. .py 파일 실행
+#################################### 끝 #################################################
+########################################################################################
+
+
 import os
 import fitz  # PyMuPDF
 import re
@@ -895,8 +906,9 @@ def extract_info(folder_path, output_excel):
        
 
 # 실행
-folder_path = r"C:\Users\82109\Desktop\개인\Python Test"
-output_excel = os.path.join(folder_path, f'{datetime.now().strftime("%Y-%m-%d")}.xlsx')
+folder_path = r"C:\Users\soosub.shin\Desktop\psn\Personal"
+folder_path2 = r"C:\Users\soosub.shin\Desktop\psn"
+output_excel = os.path.join(folder_path2, f'{datetime.now().strftime("%Y-%m-%d")}.xlsx')
 datetime.now().strftime("%Y-%m-%d")
 
 extract_info(folder_path, output_excel)
