@@ -18,7 +18,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.utils import column_index_from_string
 
-The_King = "LJH_SexyGuy"
+The_King = "LJH_Sexy_Guy"
 
 
 ## 월을 숫자 → 영문으로 변환
@@ -185,9 +185,13 @@ def apply_conditional_formatting(ws, max_row):
             cell.border = Border(top=None, bottom=None, left=thick, right=thick)
             # cell2.border = Border(top=None, bottom=None, left=medium, right=medium)
 
+
+
 ######################################################
 ################ 회사별 함수 분류 #####################
 ######################################################
+
+# 기준: "SMP Ibérica"
 def process_smp_iberica(text, filename, ws):
     """SMP Ibérica 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -233,17 +237,10 @@ def process_smp_iberica(text, filename, ws):
                     written_date = f"{extracted_text[1][:2]}-{extracted_text[1][2:4]}-{extracted_text[1][4:]}"
                     written_month = f"{mon(extracted_text[1][2:4])}-{extracted_text[1][6:]}"
                     # print(f"[SMP Ibérica] 데이터 추가: {quantity}")
-                    # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, "pno"])
-                    if written_date and pno:
-                        print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno])
-                    else:
-                        print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+                    ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
 
-                 
-       
-        
-def process_samvardhana(text, filename, ws):
+# 기준: "Samvardhana Motherson Peguform"
+def process_samvardhanaPeguform(text, filename, ws):
     """Samvardhana Motherson 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
     cleaned_list = [item.strip() for item in lines if item.strip()]
@@ -283,18 +280,11 @@ def process_samvardhana(text, filename, ws):
                     qty = float(quantity)/100000
                     written_date = f"{extracted_text[2][:2]}-{extracted_text[2][2:4]}-{extracted_text[2][4:]}"
                     written_month = f"{mon(extracted_text[2][2:4])}-{extracted_text[2][6:]}"
-                    if written_date and pno:
-                        print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno])
-                    else:
-                        print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
-                    # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, "pno"])
+                    ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
                     # print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
 
-         
-
-
-def process_samvardhana2(text, filename, ws):
+# 기준: "Samvardhana Motherson Innovative"
+def process_samvardhanaInnovative(text, filename, ws):
     """Samvardhana Motherson 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
     cleaned_list = [item.strip() for item in lines if item.strip()]
@@ -338,16 +328,13 @@ def process_samvardhana2(text, filename, ws):
                         written_month = f"{mon(extracted_text[1][2:4])}-{extracted_text[1][6:]}"
                         if written_date and pno:
                             print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                            ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
+                            ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno]) 
                         else:
                             print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
                         # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date])
                         # print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
-        
-        
-
-# "Blanket P/O #" 기준으로 PO No. 추출하였으나 동일 회사 다른 파일에 해당 부분이 같음.. 재 확인 필요.
-# "9) 11.02.2025 Forecast"  &  "homecmsdat96LG0045"
+           
+# 기준: "PLASTICOS ABC SPAIN"
 def process_PLASTICOS(text, filename, ws):
     """Samvardhana Motherson 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -384,7 +371,7 @@ def process_PLASTICOS(text, filename, ws):
                     written_month = f"{mon(for_date[1])}-{for_date[2]}"
                     if written_date and pno:
                         print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
+                        ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno]) 
                     else:
                         print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
                     # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
@@ -403,7 +390,7 @@ def process_PLASTICOS(text, filename, ws):
                 written_month = f"{mon(for_date[1])}-{for_date[2]}"
                 if written_date and pno:
                     print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                    ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
+                    ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno]) 
                 else:
                     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
                 # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
@@ -424,7 +411,7 @@ def process_PLASTICOS(text, filename, ws):
                     written_month = f"{mon(for_date[1])}-{for_date[2]}"
                     if written_date and pno:
                         print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
+                        ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno]) 
                     else:
                         print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
                     # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
@@ -432,7 +419,7 @@ def process_PLASTICOS(text, filename, ws):
             else:
                 print("숫자로 변환 불가")                        
 
-
+# 기준: "OGGIONNI"
 def process_OGGIONNI(text, filename, ws):
     """Samvardhana Motherson 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -474,15 +461,10 @@ def process_OGGIONNI(text, filename, ws):
                 qty = float(quantity)/1000
             else:
                 print("숫자로 변환 불가")
-        if written_date and pno:
-            print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-            ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
-        else:
-            print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
-        
-            # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])    
 
+            ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])    
 
+# 기준: "N.I.R.A. KSV"
 def process_NIRAKSV(text, filename, ws):
     """N.I.R.A. KSV 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -510,16 +492,11 @@ def process_NIRAKSV(text, filename, ws):
         
         if line.startswith("ABS LG ER400"):
             if len(extracted_text) >= 5:
-                quantity = extracted_text[5]
+                quantity = extracted_text[4]
                 if quantity.isdigit() and int(quantity) > 0:
-                    qty = float(quantity)/100000
+                    qty = float(quantity)/1000
                     written_date = f"{extracted_text[6][:2]}-{extracted_text[6][2:4]}-{extracted_text[6][4:]}"
                     written_month = f"{mon(extracted_text[6][2:4])}-{extracted_text[6][4:]}"
-                    # if written_date and pno:
-                    #     print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                    #     ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
-                    # else:
-                    #     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
                     ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date])
                     # print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
         if "Bestelldatum" in line:
@@ -537,6 +514,7 @@ def process_NIRAKSV(text, filename, ws):
 # 날짜 안보임
 # PO No. 모르겠음
 # Quantity 가로 정렬된 숫자 뽑아내야 하는지?
+# 기준: "Maflow Plastics Poland"
 def process_MaflowPlastic(text, filename, ws):
     """Maflow Plastic Poland 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -579,7 +557,7 @@ def process_MaflowPlastic(text, filename, ws):
                     cell = ws.cell(row=row, column=column)
                     cell.value = pno  
 
-
+# 기준: "ITW Slovakia"
 def process_ITWSlovakia(text, filename, ws):
     """Maflow Plastic Poland 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -636,7 +614,7 @@ def process_ITWSlovakia(text, filename, ws):
                     written_month = f"{mon(for_date[2:4])}-{for_date[4:]}"
                     if written_date and pno:
                         print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
+                        ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno]) 
                     else:
                         print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
                     # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
@@ -661,8 +639,8 @@ def process_ITWSlovakia(text, filename, ws):
                     # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
                     # print(f"[ITWSlovakia] 데이터 추가: {quantity}")
 
-
 ###### PO No. 부분 어디인지 물어보기@@@@@@@@ [    4) 27.03.2025 ZA00820_1906033_LG EU    ]
+# 기준: "Boryszew Kunststofftechnik"
 def process_BoryszewKunststofftechnik(text, filename, ws):
     """Maflow Plastic Poland 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -679,6 +657,9 @@ def process_BoryszewKunststofftechnik(text, filename, ws):
         elif "Liefertermin:" in cleaned_list[i] and i + 1 < len(cleaned_list):
             merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]}")
             i+=2
+        elif cleaned_list[i].strip().startswith("Hiermit bestellen") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-2]} {cleaned_list[i]} Seob_PO")
+            i+=1
         else:
             merge_lines.append(str(cleaned_list[i]))
             i += 1
@@ -690,9 +671,9 @@ def process_BoryszewKunststofftechnik(text, filename, ws):
         print(f"@@@@@@@@@@@@@@@line {line}")
         print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
 
-        if "Number:" in line:
+        if "Seob_PO" in line:
             if len(extracted_text) >= 2:
-                pno = (f"{extracted_text[1]} {extracted_text[2]}")
+                pno = (f"{extracted_text[0]}")
                 first_row = 6
                 last_row = ws.max_row
                 column = 8
@@ -703,7 +684,7 @@ def process_BoryszewKunststofftechnik(text, filename, ws):
         if "Liefertermin:" in line:
             for_date = extracted_text[1]
             written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
-            written_month = f"{mon(for_date[2:4])}-{for_date[4:]}"
+            written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
             for row in range(6, ws.max_row + 1):
                     cell = ws.cell(row=row, column=7)
                     cell2 = ws.cell(row=row, column=1)
@@ -716,18 +697,10 @@ def process_BoryszewKunststofftechnik(text, filename, ws):
                 quantity = extracted_text[2]
                 if quantity.isdigit() and int(quantity) > 0:
                     qty = float(quantity)/1000
-                    if written_date and pno:
-                        print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
-                    else:
-                        print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
-                    # ws.append(["written_month", The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, "written_date"])
+                    ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
                     # print(f"[ITWSlovakia] 데이터 추가: {quantity}")         
 
-
-# 동일 회사 다른 PO No.를 가진 파일을 동시에 돌려야 할때가 있는지. 
-# "15) 15.01.2025 Bestellung Nr. 7000533558 (003)"   &   "8) 05.03.2025 Bestellung Nr. 7000540404"
-# ChatGPT 이용하여 해결함. 코드 파악 필요@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 04.07.2025
+# 기준: "Pro-X Automotive AG"
 def process_ProXAutomotiveAG(text, filename, ws):
     """ProX Automotive AG 문서를 처리하는 함수"""
     print(f"📄 Processing file: {filename}")
@@ -773,61 +746,75 @@ def process_ProXAutomotiveAG(text, filename, ws):
                 else:
                     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
 
-
+# 기준: "Finke Anwendungstechnik"
 def process_FinkeAnwendungstechnik(text, filename, ws):
-    """Maflow Plastic Poland 문서를 처리하는 함수"""
+    """Finke Anwendungstechnik 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
     cleaned_list = [item.strip() for item in lines if item.strip()]
+
+    i = 0
+    merge_lines = []
+
     written_date = ""
     written_month = ""
     pno = ""
-    i = 0
-    merge_lines = []
+
+    entries = []  # 여기서 모든 qty와 그 시점의 context(pno, date 등)를 저장
+
     while i < len(cleaned_list):
-        if "Bestellung Nr:" in cleaned_list[i].strip() and i + 1 < len(cleaned_list):
-            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
-            i+=2
-        elif "ABS XR 401 BK 9001" in cleaned_list[i].strip() and i + 1 < len(cleaned_list):
-            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
-            i+=2
-        else:
-            merge_lines.append(str(cleaned_list[i]))
+        line = cleaned_list[i]
+        if "Bestellung Nr:" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{line} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif "Gesamt Netto" in line and i + 1 < len(cleaned_list):
+            end = i - 5
+            for kg in range(i, end, -1):
+                parts = cleaned_list[kg].split()
+                if len(parts) >= 2 and parts[1].upper() == "KG":
+                    merge_lines.append(f"{cleaned_list[kg]} Seob_qty")
             i += 1
-    
+        else:
+            merge_lines.append(line)
+            i += 1
+
     for line in merge_lines:
         extracted_texts = re.split(r'\s+', line)
         extracted_text = [item for item in extracted_texts if item.strip()]
-        # material = "ABS LG ER400 M95007 schwarz"
-        print(f"@@@@@@@@@@@@@@@line {line}")
-        print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
 
         if "Seob_BestellungNr" in line:
-            for_date = extracted_text[4]
-            pno = extracted_text[2]
-            written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
-            written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
-            for row in range(6, ws.max_row + 1):
-                    cell = ws.cell(row=row, column=7)
-                    cell2 = ws.cell(row=row, column=1)
-                    cell_pno = ws.cell(row=row, column=8)
-                    cell.value = written_date 
-                    cell2.value = written_month
-                    cell_pno.value = pno
-       
-        if "Seob_qty" in line:
-            if len(extracted_text) >= 7:
-                quantity = extracted_text[6]
+            if len(extracted_text) >= 5:
+                for_date = extracted_text[4]
+                pno = extracted_text[2]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+        elif "Seob_qty" in line:
+            if len(extracted_text) >= 2:
+                quantity = extracted_text[0]
                 if quantity.isdigit() and int(quantity) > 0:
-                    qty = float(quantity)/100000
-                    if written_date and pno:
-                        print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
-                    else:
-                        print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+                    qty = float(quantity) / 100000
+                    # ❗ 현재 시점의 date/pno로 qty 묶어서 저장
+                    entries.append({"qty": qty, "written_date": written_date, "written_month": written_month, "pno": pno})
+
+    # 💾 qty 정보 append
+    for entry in entries:
+        if entry["written_date"] and entry["pno"]:
+            ws.append([entry["written_month"],
+                The_King,
+                datetime.now().strftime("%Y-%m-%d"),
+                The_King,
+                "On Stock",
+                entry["qty"],
+                entry["written_date"],
+                entry["pno"]
+            ])
+            print(f"✅ 추가됨: {entry['qty']}, {entry['written_date']}, {entry['pno']}")
+        else:
+            print(f"❌ 정보 부족 → 건너뜀: {entry}")
+
                     # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
                     # print(f"[ITWSlovakia] 데이터 추가: {quantity}")
 
-
+# 기준: "Formzeug GmbH"
 def process_FormzeugGmbH(text, filename, ws):
     """Formzeug GmbH 문서를 처리하는 함수"""
     lines = text.replace(",", "").replace(".", "").split("\n")
@@ -875,11 +862,121 @@ def process_FormzeugGmbH(text, filename, ws):
                     qty = float(quantity)/1000
                     if written_date and pno:
                         print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
-                        ws.append([written_month, filename, datetime.now().strftime("%Y-%m-%d"), filename, "On Stock", qty, written_date, pno]) 
+                        ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno]) 
                     else:
                         print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
                     # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
                     # print(f"[ITWSlovakia] 데이터 추가: {quantity}")
+
+
+# 기준: "ABC Technologies Karl Etzel GmbH"
+def process_ABCTechnologiesKEGmbH(text, filename, ws):
+    print(f"📌 함수 호출됨: {filename}")
+    """ABC Technologies Karl Etzel GmbH 문서를 처리하는 함수"""
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+
+    i = 0
+    merge_lines = []
+
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    pending_qty = None
+    entries = []  # 여기서 모든 qty와 그 시점의 context(pno, date 등)를 저장
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Belegnummer:" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-5]} {cleaned_list[i]} Seob_BestellungNr")
+            i += 1
+        elif "ABS062" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
+            i += 1
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        print(f"@@@@@@@@@@@@@@@line {line}")
+        print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 2:
+                pno = extracted_text[0]
+
+        if "Liefertermin:" in line and len(extracted_text) == 2:
+            for_date = extracted_text[1]
+            written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+            written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+            
+            # 날짜 처리 후 이전 qty가 있으면 추가
+            if pending_qty is not None and pno and written_date:
+                # `pending_qty`와 `pno`, `written_date`를 기준으로 추가
+                entries.append({
+                    "qty": pending_qty,
+                    "written_date": written_date,
+                    "written_month": written_month,
+                    "pno": pno
+                })
+                print(f"✅ 날짜 추가됨: {pending_qty}, {written_date}, {pno}")
+            pending_qty = None  # 날짜 처리 후 pending_qty는 None으로 초기화
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[1]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 100000
+                    # 현재 시점의 date/pno로 qty 묶어서 저장
+                    if pno and written_date:
+                        # 날짜와 pno를 확인하고 entries에 추가
+                        entries.append({"qty": qty, "written_date": written_date, "written_month": written_month, "pno": pno})
+                        print(f"✅ qty 추가됨: {qty}, {written_date}, {pno}")
+                    else:
+                        pending_qty = qty
+                        print(f"⏸ 날짜 없음, pending에 저장: {pending_qty}")
+
+    # 마지막 데이터 처리: `pending_qty`가 남아 있을 경우 강제로 추가
+    if pending_qty is not None and written_date and pno:
+        # 마지막에 처리되지 않은 데이터를 강제로 추가
+        entries.append({
+            "qty": pending_qty,
+            "written_date": written_date,
+            "written_month": written_month,
+            "pno": pno
+        })
+        ws.append([written_month,
+            The_King,
+            datetime.now().strftime("%Y-%m-%d"),
+            The_King,
+            "On Stock",
+            pending_qty,
+            written_date,
+            pno
+        ])
+        print(f"✅ 마지막 데이터 강제로 추가됨: {pending_qty}, {written_date}, {pno}")
+
+    # 💾 entries에서 모든 데이터를 append
+    for entry in entries:
+        if entry["written_date"] and entry["pno"]:
+            ws.append([entry["written_month"],
+                The_King,
+                datetime.now().strftime("%Y-%m-%d"),
+                The_King,
+                "On Stock",
+                entry["qty"],
+                entry["written_date"],
+                entry["pno"]
+            ])
+            print(f"✅ 추가됨: {entry['qty']}, {entry['written_date']}, {entry['pno']}")
+        else:
+            print(f"❌ 정보 부족 → 건너뜀: {entry}")
+
+
+
 
 
 
@@ -905,9 +1002,11 @@ def extract_info(folder_path, output_excel):
 
             try:
                 doc = fitz.open(file_path)
+                full_text = ""
 
                 for page in doc:
                     text = page.get_text("text")
+                    full_text+=text
                     print(f"📄 {filename} - 페이지 텍스트 읽음")
                     print(f"@@@@ Text 임: {text}")
 
@@ -917,11 +1016,11 @@ def extract_info(folder_path, output_excel):
 
                     elif "Samvardhana Motherson Peguform" in text and "9122188 ASA LI 941V NEGRO 9B9 (LG)" in text:
                         ws = get_or_create_sheet(wb, "Samvardhana Motherson Peguform")
-                        process_samvardhana(text, filename, ws)
+                        process_samvardhanaPeguform(text, filename, ws)
 
                     elif "Samvardhana Motherson Innovative" in text:
                         ws = get_or_create_sheet(wb, "Samvardhana Motherson Innovative")
-                        process_samvardhana2(text, filename, ws)
+                        process_samvardhanaInnovative(text, filename, ws)
 
                     elif "OGGIONNI" in text and "5335630000" in text:
                         ws = get_or_create_sheet(wb, "OGGIONNI")
@@ -937,7 +1036,7 @@ def extract_info(folder_path, output_excel):
                         
                     elif "Maflow Plastics Poland" in text:
                         ws = get_or_create_sheet(wb, "Maflow Plastics Poland")
-                        process_NIRAKSV(text, filename, ws)
+                        process_MaflowPlastic(text, filename, ws)
 
                     elif "ITW Slovakia" in text:
                         ws = get_or_create_sheet(wb, "ITW Slovakia")
@@ -959,7 +1058,9 @@ def extract_info(folder_path, output_excel):
                         ws = get_or_create_sheet(wb, "Formzeug GmbH")
                         process_FormzeugGmbH(text, filename, ws)
                         
-                                    
+                    elif "ABC Technologies Karl Etzel GmbH" in text and text != full_text:
+                        ws = get_or_create_sheet(wb, "ABC Technologies Karl Etzel GmbH")
+                        process_ABCTechnologiesKEGmbH(full_text, filename, ws)                
                             
                     else:
                         print(f"⚠️ {filename}: 지정된 키워드 없음. 스킵.")
