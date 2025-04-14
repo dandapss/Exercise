@@ -1003,6 +1003,7 @@ def process_ABCTechnologiesKEGmbH(text, filename, ws):
 def extract_info(folder_path, output_excel):
     """폴더 내 모든 PDF를 읽고 키워드별로 처리"""
     extracted_data = []
+    No_Key_Word = []
 
     # 기존 Excel 파일이 있으면 로드, 없으면 새 파일 생성
     if os.path.exists(output_excel):
@@ -1079,6 +1080,7 @@ def extract_info(folder_path, output_excel):
                             
                     else:
                         print(f"⚠️ {filename}: 지정된 키워드 없음. 스킵.")
+                        No_Key_Word.append(filename)
 
             except Exception as e:
                 print(f"❌ {filename} 처리 중 오류 발생: {e}")
@@ -1125,3 +1127,5 @@ output_excel = os.path.join(excel_path, f'{datetime.now().strftime("%Y-%m-%d")}.
 datetime.now().strftime("%Y-%m-%d")
 
 extract_info(folder_path, output_excel)
+
+print(f"작업 진행 되어야 되는 파일들: {No_Key_Word}")
