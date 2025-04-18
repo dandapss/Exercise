@@ -18,6 +18,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.utils import column_index_from_string
 import random
+from openpyxl.cell.cell import MergedCell
 
 tt = ["LJH_Sexy_Guy", "LJH_Macho_Guy", "LJH_Best_Guy", "Sexy_Master", "Dance_King", "Future_Leader"]
 The_King = random.choice(tt)
@@ -41,8 +42,19 @@ def fill_missing_pno(ws):
 
     for row in range(first_row, ws.max_row + 1):
         cell = ws.cell(row=row, column=column_index)
+    
+    # 병합된 셀인지 확인
+        if isinstance(cell, MergedCell):
+            print(f"병합 셀 건너뜀: H{row}")
+            continue
+
         if cell.value is None or str(cell.value).strip() == "":
             cell.value = "=H6"
+
+    # for row in range(first_row, ws.max_row + 1):
+    #     cell = ws.cell(row=row, column=column_index)
+    #     if cell.value is None or str(cell.value).strip() == "":
+    #         cell.value = "=H6"
 
 ## 월을 영문 → 숫자로 변환
 def rev_mon(text):
@@ -91,20 +103,10 @@ def get_materialcode(text):
         "ASA LI941 F94484 (LG)": "ASA LI941 F94484 (LG)",
         "ABS ER400 M95007 schwarz": "ABS ER400 M95007 schwarz",
         "ABS ER400 M97005 NEGRO": "ABS ER400 M97005 NEGRO",
+        "916502": "916502",
         "None": "Material Code 모름"
     }
     return material.get(text, "") 
-
-## PO Number page가 달라 못받을 경우 H6에 있는 값 받아오기
-def fill_missing_pno(ws):
-    """H열(pno)에 값이 없는 경우 기본값 채워 넣기"""
-    column_index = column_index_from_string("H")  # H = 8
-    first_row = 7  # 데이터는 H6부터 시작
-
-    for row in range(first_row, ws.max_row + 1):
-        cell = ws.cell(row=row, column=column_index)
-        if cell.value is None or str(cell.value).strip() == "":
-            cell.value = "=H6"
 
 ## (H열) 마지막 줄 찾기
 def get_last_filled_row(ws, column_letter="H"):
@@ -116,6 +118,43 @@ def get_last_filled_row(ws, column_letter="H"):
             last_row = row
     
     return last_row  # 최소 4행 보장
+
+## 마지막 date-10주 계산 하기
+def date_neg_70days(ws):
+    column_index = column_index_from_string("G")
+    column_g = []
+    for row in range(6, ws.max_row + 1):  # 5행부터 검색
+        if ws.cell(row=row, column=column_index).value:  # 값이 있는 마지막 행 찾기
+            cell_value = ws.cell(row=row, column=column_index).value
+            column_g.append(cell_value)
+    if not column_g:
+        print("G6부터 시작하는 G열에 유효한 데이터가 없습니다.")
+        return None
+
+    last_rowt = ws.max_row + 2
+    last_row = int(last_rowt)
+    last_date = column_g[-1]
+    parsed_date = datetime.strptime(last_date, "%d-%m-%y")
+
+    if isinstance(parsed_date, (datetime, date)):
+        new_date = (parsed_date - timedelta(weeks=10)).date()
+
+    ws.merge_cells(f'B{last_row}:H{last_row}')
+    ws.row_dimensions[last_row].height = 30
+    ws[f'B{last_row}'] = f"Next Order Due Date: {new_date}"
+    ws[f'B{last_row}'].alignment = Alignment(horizontal='center', vertical='center')
+    ws[f'B{last_row}'].font = Font(size=15, bold=True, color='FF0000', name="Showcard Gothic")
+    thick_red = Side(style="thick", color="FF0000")
+    for column in range(2, 9):
+        cell = ws.cell(row=last_row, column=column)
+        if column == 2:
+            cell.border = Border(top=thick_red, left=thick_red, right=None, bottom=thick_red)
+        elif column == 8:
+            cell.border = Border(top=thick_red, left=None, right=thick_red, bottom=thick_red)
+        else:
+            cell.border = Border(top=thick_red, bottom=thick_red, left=None, right=None)
+
+    # ws[f'B{last_row}'].border = thick_border
 
 ## 시트별 첫 두 행에 회사명 및 Material Code 추가
 def first_two_lows(name, ws, material):
@@ -745,7 +784,7 @@ def process_ITWSlovakiasro(text, filename, ws):
     for line in merge_lines:
         extracted_texts = re.split(r'\s+', line)
         extracted_text = [item for item in extracted_texts if item.strip()]
-        material = get_materialcode("None")
+        material = get_materialcode("916502")
 
         if "Number:" in line:
             if len(extracted_text) >= 2:
@@ -1563,8 +1602,8 @@ def process_SLMKunststofftechnikGmbH(text, filename, ws):
         extracted_texts = re.split(r'\s+', line)
         extracted_text = [item for item in extracted_texts if item.strip()]
         material = get_materialcode("ASALI941-F94841 (9B9)")
-        print(f"@@@@@@@@@@@@@@@line {line}")
-        print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")                   
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")                   
 
         if "Seob_Date" in line:
             if len(extracted_text) >= 2:
@@ -1764,6 +1803,12 @@ def extract_info(folder_path, output_excel):
         ## 색상 추가!! 필요 없을 경우 아래 한줄만 삭제
         apply_conditional_formatting(ws, last_row_f)  # 각 시트에 조건부 서식 적용
 
+        ## 마지막 날짜 - 70일에 해당하는 날짜 구하기
+        date_neg_70days(ws)
+
+        ## I열 (파일명) 숨김 처리
+        ws.column_dimensions['I'].hidden = True
+
         ws.freeze_panes = 'B5'
 
     if os.path.exists(output_excel):
@@ -1773,7 +1818,7 @@ def extract_info(folder_path, output_excel):
        
 
 # 실행
-folder_path = r"C:\Users\82109\Desktop\개인\Python Test\마테리얼 코드 모름"
+folder_path = r"C:\Users\82109\Desktop\개인\Python Test"
 excel_path =r"C:\Users\82109\Desktop\개인\Python Test"
 output_excel = os.path.join(excel_path, f'{datetime.now().strftime("%Y-%m-%d")}.xlsx')
 datetime.now().strftime("%Y-%m-%d")
