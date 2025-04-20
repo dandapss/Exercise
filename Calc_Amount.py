@@ -77,33 +77,36 @@ def first_monday(the_month, the_year):
 def get_materialcode(text):
     """월(MM)을 영문 월(JAN, FEB 등)로 변환"""
     material = {
-        "9120491 ASA LI941 F94484 (LG)": "9120491 ASA LI941 F94484 (LG)", 
-        "9122188 ASA LI 941V NEGRO 9B9 (LG)": "9122188 ASA LI 941V NEGRO 9B9 (LG)", 
-        "LG LI941V_V94841_ASA": "LG LI941V_V94841_ASA", 
-        "5335630000": "5335630000", 
-        "ABS LG ER400 M95007 schwarz": "ABS LG ER400 M95007 schwarz", 
+        "9120491 ASA LI941 F94484 (LG)": "A941-F94484-OBI", 
+        "9122188 ASA LI 941V NEGRO 9B9 (LG)": "A941-V94841-OBI", 
+        "LG LI941V_V94841_ASA": "A941-V94841-OBI", 
+        "5335630000": "A410-NP-K8I", 
+        "ABS LG ER400 M95007 schwarz": "A400-M95007-K8I", 
         "0075A00054100GR": "A912-NP-WL",
         "LG ASA LI941-V - 94841 (VW9B9) (SILO)": "A941-V94841-OBI", 
-        "LG ASA LI941-F - 94841 (VW9B9) AEB": "LG ASA LI941-F - 94841 (VW9B9) AEB", 
+        "LG ASA LI941-F - 94841 (VW9B9) AEB": "A941-F94841-OBI", 
         "LG ASA LI941 - V94841 (VW9B9) BigBag": "A941-V94841-KCI", 
-        "High gloss ASA: LI941F Piano Black (F94484)": "High gloss ASA: LI941F Piano Black (F94484)",
+        "High gloss ASA: LI941F Piano Black (F94484)": "A941-F94484-OBI",
         "ABS XR 401 BK 9001": "A401-9001-K8", 
         "High gloss ASA LI941-F94484 (Piano Black)": "A941-F94484-OBI",
         "30022028 LG LI941-F 94484 PIANO BLACK": "A941-F94484-OBI",
-        "30021896 LG LI941V 94841": "30021896 LG LI941V 94841",
-        "30022062 ABS XR 410 NATUR": "30022062 ABS XR 410 NATUR",
-        "ASA LI941V": "ASA LI941V",
+        "30021896 LG LI941V 94841": "############30021896 LG LI941V 94841",
+        "30022062 ABS XR 410 NATUR": "A410-NP-K8I",
+        "ASA LI941V": "##########ASA LI941V",
         "ASA LI941F-94841": "A941-F94841-OBI",
         "LG LI941 F 94484 PIANO BLACK": "A941-F94484-OBI",
-        "ABS XR 410 NATUR": "A410-NP-K8I", # 중복됨.
-        "ABS ER400-M95007": "ABS ER400-M95007",
+        "ABS XR 410 NATUR": "A410-NP-K8I",
+        "ABS ER400-M95007": "A400-M95007-K8I",
         "ASALI941-F94841 (9B9)": "A941-F94841-OBI",
-        "ABS 950kg XR410 9529": "ABS 950kg XR410 9529",
-        "ABS XR410 naturverpackt in Octabin": "ABS XR410 naturverpackt in Octabin",
-        "ASA LI941 F94484 (LG)": "ASA LI941 F94484 (LG)",
-        "ABS ER400 M95007 schwarz": "ABS ER400 M95007 schwarz",
-        "ABS ER400 M97005 NEGRO": "ABS ER400 M97005 NEGRO",
-        "916502": "916502",
+        "ABS 950kg XR410 9529": "##########ABS 950kg XR410 9529",
+        "ABS XR410 naturverpackt in Octabin": "A410-95296-OBI",
+        "ASA LI941 F94484 (LG)": "A941-V94841-OBI",
+        "ABS ER400 M95007 schwarz": "A400-M95007-K8I",
+        "ABS ER400 M97005 NEGRO": "A400-M95007-K8I",
+        "916502": "A410-95427-OBI",
+        "ASA LG LI941 -V94841": "############# ASA LG LI941 -V94841",
+        "ASA LG LI941 FXT ASA": "############# ASA LG LI941 FXT ASA",
+        "ABS ER459": "############## ABS ER459",
         "None": "Material Code 모름"
     }
     return material.get(text, "") 
@@ -134,16 +137,20 @@ def date_neg_70days(ws):
     last_rowt = ws.max_row + 2
     last_row = int(last_rowt)
     last_date = column_g[-1]
-    parsed_date = datetime.strptime(last_date, "%d-%m-%y")
+    if len(last_date) == 8:
+        parsed_date = datetime.strptime(last_date, "%d-%m-%y")
+    else:
+        new_date = f"{last_date[:6]}{last_date[8:]}"
+        parsed_date = datetime.strptime(new_date, "%d-%m-%y")
 
     if isinstance(parsed_date, (datetime, date)):
         new_date = (parsed_date - timedelta(weeks=10)).date()
 
     ws.merge_cells(f'B{last_row}:H{last_row}')
-    ws.row_dimensions[last_row].height = 30
+    ws.row_dimensions[last_row].height = 25
     ws[f'B{last_row}'] = f"Next Order Due Date: {new_date}"
     ws[f'B{last_row}'].alignment = Alignment(horizontal='center', vertical='center')
-    ws[f'B{last_row}'].font = Font(size=15, bold=True, color='FF0000', name="Showcard Gothic")
+    ws[f'B{last_row}'].font = Font(size=15, bold=True, color='FF0000', name="Palatino Linotype")
     thick_red = Side(style="thick", color="FF0000")
     for column in range(2, 9):
         cell = ws.cell(row=last_row, column=column)
@@ -154,6 +161,10 @@ def date_neg_70days(ws):
         else:
             cell.border = Border(top=thick_red, bottom=thick_red, left=None, right=None)
 
+    ws.merge_cells(f'A1:A2')
+    ws["A1"] = f'=IF(DATEVALUE(MID(B{last_row}, 22, 10))-TODAY()<0, "D+" & ABS(DATEVALUE(MID(B{last_row}, 22, 10))-TODAY()), "D-" & (DATEVALUE(MID(B{last_row}, 22, 10))-TODAY()))'
+    ws["A1"].font = Font(size=15, bold=True, color='FF1234') 
+    ws["A1"].alignment = Alignment(horizontal='center', vertical='center')
     # ws[f'B{last_row}'].border = thick_border
 
 ## 시트별 첫 두 행에 회사명 및 Material Code 추가
@@ -1416,7 +1427,6 @@ def process_SMRAutomotiveMirrorTechnology(text, filename, ws):
             merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
             i += 2
         elif "T" in cleaned_list[i][0] and i + 1 < len(cleaned_list):
-            print(cleaned_list[i][6:8])
             if "kg" in cleaned_list[i+2].lower() and cleaned_list[i][6:8] == "20":
                 merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} Seob_qty")
             i += 3
@@ -1434,8 +1444,8 @@ def process_SMRAutomotiveMirrorTechnology(text, filename, ws):
         elif "LG LI941 F 94484 PIANO BLACK" in line:
             material = get_materialcode("LG LI941 F 94484 PIANO BLACK")
 
-        print(f"@@@@@@@@@@@@@@@line {line}")
-        print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
 
         if "Seob_qty" in line:
             if len(extracted_text) >= 5:
@@ -1629,6 +1639,65 @@ def process_SLMKunststofftechnikGmbH(text, filename, ws):
                     cell.value = pno  
     first_two_lows("SLM Kunststofftechnik GmbH", ws, material)
 
+# 기준: SMR AUTOMOTIVE SYSTEMS SPAIN SAU에 있는 PO Numbers
+def process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws):
+    """SMR AUTOMOTIVE SYSTEMS SPAIN SAU 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Purchase Order" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif cleaned_list[i][6:8] == "20" and i+1 < len(cleaned_list):
+            if cleaned_list[i+1].strip() == "F" or cleaned_list[i+1].strip() == "P":
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} {cleaned_list[i+3]} {cleaned_list[i+4]} Seob_qty")
+                i += 3
+            i+=1
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        if "ASA LG LI941 -V94841" in line:
+            material = get_materialcode("ASA LG LI941 -V94841")
+        elif "ASA LG LI941 FXT ASA" in line:
+            material = get_materialcode("ASA LG LI941 FXT ASA")
+        elif "ABS ER459" in line:
+            material = get_materialcode("ABS ER459")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")                   
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 4:
+                quantity = extracted_text[2]
+                for_date = extracted_text[0]
+                written_date = f"{for_date[:2]}-{for_date[3:5]}-{for_date[6:]}"
+                written_month = f"{mon(for_date[3:5])}-{for_date[8:]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 1000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 4:
+                pno = extracted_text[3]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("SMR AUTOMOTIVE SYSTEMS SPAIN SAU", ws, material)
 
 
 
@@ -1712,10 +1781,10 @@ def extract_info(folder_path, output_excel):
 
                     elif "Finke Anwendungstechnik GmbH" in text:
                         if "ABS XR 401 BK 9001" in text:
-                            ws = get_or_create_sheet(wb, "Finke Anwendungstechnik_ABS XR 401 BK 9001")
+                            ws = get_or_create_sheet(wb, "Finke Anwendungstechnik_A401-9001-K8")
                             process_FinkeAnwendungstechnik(text, filename, ws)
                         elif "High gloss ASA: LI941F" in text:
-                            ws = get_or_create_sheet(wb, "Finke Anwendungstechnik_High gloss ASA: LI941F")
+                            ws = get_or_create_sheet(wb, "Finke Anwendungstechnik_A941-F94484-OBI")
                             process_FinkeAnwendungstechnik(text, filename, ws)
 
                     elif "Formzeug GmbH" in text:
@@ -1732,10 +1801,10 @@ def extract_info(folder_path, output_excel):
 
                     elif "c/o Linden GmbH" in text:
                         if "30022062 ABS XR 410 NATUR" in text:
-                            ws = get_or_create_sheet(wb, "CO Linden GmbH_30022062 ABS XR 410 NATUR")
+                            ws = get_or_create_sheet(wb, "CO Linden GmbH_A410-NP-K8I")
                             process_coLindenGmbH(text, filename, ws)
                         elif "30021896 LG LI941V 94841" in text:
-                            ws = get_or_create_sheet(wb, "CO Linden GmbH_30021896 LG LI941V 94841")
+                            ws = get_or_create_sheet(wb, "CO Linden GmbH_!!!!!!30021896 LG LI941V 94841")
                             process_coLindenGmbH(text, filename, ws)
 
                     elif "Plant Neustadt" in text:
@@ -1748,13 +1817,13 @@ def extract_info(folder_path, output_excel):
 
                     elif "SMR Automotive Mirror Technology" in text:
                         if "ASA LI941V" in text:
-                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_ASA LI941V")
+                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_!!!!!ASA LI941V")
                             process_SMRAutomotiveMirrorTechnology(text, filename, ws)
                         elif "LG LI941 F 94484 PIANO BLACK" in text:
-                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_LG LI941 F 94484 PIANO BLACK")
+                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_A941-F94484-OBI")
                             process_SMRAutomotiveMirrorTechnology(text, filename, ws)
                         elif "ASA LI941F-94841" in text:
-                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_ASA LI941F-94841")
+                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_A941-F94841-OBI")
                             process_SMRAutomotiveMirrorTechnology(text, filename, ws)
 
                     elif "Plant Schierling" in text:
@@ -1768,6 +1837,17 @@ def extract_info(folder_path, output_excel):
                     elif "SLM Kunststofftechnik GmbH" in text:
                         ws = get_or_create_sheet(wb, "SLM Kunststofftechnik GmbH")
                         process_SLMKunststofftechnikGmbH(text, filename, ws)
+
+                    elif "SUPPLIER SCHEDULE / MATERIAL RELEASE" in text:
+                        if "ASA LG LI941 -V94841" in text:
+                            ws = get_or_create_sheet(wb, " SMR AUTOMOTIVE_ASA LG LI941")
+                            process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws)
+                        elif "ASA LG LI941 FXT ASA" in text:
+                            ws = get_or_create_sheet(wb, " SMR AUTOMOTIVE_ASA LG LI941 FXT ASA")
+                            process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws)
+                        elif "ABS ER459" in text:
+                            ws = get_or_create_sheet(wb, " SMR AUTOMOTIVE_ABS ER459")
+                            process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws)
 
                     else:
                         print(f"⚠️ {filename}: 지정된 키워드 없음. 스킵.")
