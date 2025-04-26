@@ -1,113 +1,2025 @@
-# Love Calculator
+#######################################################################################
+################################ 초기 세팅 방법 #########################################
+### 1. https://www.python.org/downloads/ 설치
+### 2. 해당 exe 설치 진행 시 아래에 administrator 실행 및 PATH 추가 선택
+### 3. 동일 파일에 추가 되어 있는 파일 설치 pip install "file.whl" 실행
+### 4. .py 파일을 notepad로 실행 시켜 pdf 파일 및 excel 파일 위치 설정
+### 5. .py 파일 실행
 
-print("Welcome to the Love Calculator\n Type your name and partner's to check the score")
-name1 = input("Your name: ")
-name2 = input("Your partner's name: ")
-fullname = name1 + " " + name2
-print(fullname)
-Upper_case = fullname.upper()
-name1_T = Upper_case.count("T")
-print(f"T occurs {name1_T} time(s)")
-name1_R = Upper_case.count("R")
-print(f"R occurs {name1_R} time(s)")
-name1_U = Upper_case.count("U")
-print(f"U occurs {name1_U} time(s)")
-name1_E = Upper_case.count("E")
-print(f"E occurs {name1_E} time(s)")
+### .exe 파일로 저장 >> pyinstaller --onefile --windowed [파일 위치]\[파일명].py
+#################################### 끝 ################################################
+########################################################################################
 
-name1_total = int(name1_T) + int(name1_R) + int(name1_U) + int(name1_E)
-print(f"   The TRUE score is {name1_total}")
 
-name2_L = Upper_case.count("L")
-print(f"L occurs {name2_L} time(s)")
-name2_O = Upper_case.count("O")
-print(f"O occurs {name2_O} time(s)")
-name2_V = Upper_case.count("V")
-print(f"V occurs {name2_V} time(s)")
-name2_E = Upper_case.count("E")
-print(f"E occurs {name2_E} time(s)")
-
-name2_total = int(name2_L) + int(name2_O) + int(name2_V) + int(name2_E)
-print(f"   The LOVE score is {name2_total}")
-
-TT = name1_total*10
-Score = TT + name2_total
-
-if Score < 10 or Score > 90:
-    print(f"\nYour score is {Score}, you go together like coke and mentos")
-elif Score >=40 and Score <= 50:
-    print(f"\nYour score is {Score}, you are alright together")
-else:
-    print("\n#######################")
-    print(f"Your total score is {Score}")
-    print("#######################")
-
-# random Love Score less than certain number
+import os
+import fitz  # PyMuPDF
+import re
+import openpyxl
+from datetime import date, timedelta, datetime
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.formatting.rule import FormulaRule
+from openpyxl.utils import column_index_from_string
 import random
+from openpyxl.cell.cell import MergedCell
 
-random_number = random.random() * 5
-print(f"Your love score is {random_number}")
+tt = ["LJH_Sexy_Guy", "LJH_Macho_Guy", "LJH_Best_Guy", "Sexy_Master", "Dance_King", "Future_Leader"]
+The_King = random.choice(tt)
+# The_King = "LJH_Sexy_Guy"
 
 
-# Love Calculator ver.2 (using FOR)
-print("Welcome to the Love Calculator\n Type your name and partner's to check the score")
-name1 = input("Your name: ")
-name2 = input("Your partner's name: ")
-fullname = name1 + " " + name2
-print(fullname)
-Upper_case = fullname.upper()
-total_TRUE = 0
-for letter in "TRUE":
-    # print(letter)
-    if Upper_case.count(letter) > 0:
-        num = Upper_case.count(letter)
-        print(f"{letter} occures {num} time(s)")
-        total_TRUE+=num
-        # num=0
+## 월을 숫자 → 영문으로 변환
+def mon(text):
+    """월(MM)을 영문 월(JAN, FEB 등)로 변환"""
+    months = {
+        "01": "JAN", "02": "FEB", "03": "MAR", "04": "APR", "05": "MAY", "06": "JUN",
+        "07": "JUL", "08": "AUG", "09": "SEP", "10": "OCT", "11": "NOV", "12": "DEC"
+    }
+    return months.get(text, "")
+
+## PO Number page가 달라 못받을 경우 H6에 있는 값 받아오기
+def fill_missing_pno(ws):
+    """H열(pno)에 값이 없는 경우 기본값 채워 넣기"""
+    column_index = column_index_from_string("H")  # H = 8
+    first_row = 7  # 데이터는 H6부터 시작
+
+    for row in range(first_row, ws.max_row + 1):
+        cell = ws.cell(row=row, column=column_index)
+    
+    # 병합된 셀인지 확인
+        if isinstance(cell, MergedCell):
+            print(f"병합 셀 건너뜀: H{row}")
+            continue
+
+        if cell.value is None or str(cell.value).strip() == "":
+            cell.value = "=H6"
+
+    # for row in range(first_row, ws.max_row + 1):
+    #     cell = ws.cell(row=row, column=column_index)
+    #     if cell.value is None or str(cell.value).strip() == "":
+    #         cell.value = "=H6"
+
+## 월을 영문 → 숫자로 변환
+def rev_mon(text):
+    """월(MM)을 영문 월(JAN, FEB 등)로 변환"""
+    months = {
+        "JAN": "01", "FEB": "02", "MAR": "03", "APR": "04", "MAY": "05", "JUN": "06",
+        "JUL": "07", "AUG": "08", "SEP": "09", "OCT": "10", "NOV": "11", "DEC": "12"
+    }
+    return months.get(text, "")
+
+## 월/년 만 있을 경우 해당 달에 해당하는 첫번째 월요일 받아오기
+def first_monday(the_month, the_year):
+    month = int(the_month)
+    year = int(the_year)
+    first_day = date(year, month, 1)
+    days_until_Monday = (0 - first_day.weekday()) % 7
+    the_Monday = first_day + timedelta(days=days_until_Monday)
+    return the_Monday.day
+
+def get_materialcode(text):
+    """월(MM)을 영문 월(JAN, FEB 등)로 변환"""
+    material = {
+        "9120491 ASA LI941 F94484 (LG)": "A941-F94484-OBI", 
+        "9122188 ASA LI 941V NEGRO 9B9 (LG)": "A941-V94841-OBI", 
+        "LG LI941V_V94841_ASA": "A941-V94841-OBI", 
+        "5335630000": "A410-NP-K8I", 
+        "ABS LG ER400 M95007 schwarz": "A400-M95007-K8I", 
+        "0075A00054100GR": "A912-NP-WL",
+        "LG ASA LI941-V - 94841 (VW9B9) (SILO)": "A941-V94841-OBI", 
+        "LG ASA LI941-F - 94841 (VW9B9) AEB": "A941-F94841-OBI", 
+        "LG ASA LI941 - V94841 (VW9B9) BigBag": "A941-V94841-KCI", 
+        "High gloss ASA: LI941F Piano Black (F94484)": "A941-F94484-OBI",
+        "ABS XR 401 BK 9001": "A401-9001-K8", 
+        "High gloss ASA LI941-F94484 (Piano Black)": "A941-F94484-OBI",
+        "30022028 LG LI941-F 94484 PIANO BLACK": "A941-F94484-OBI",
+        "30021896 LG LI941V 94841": "############30021896 LG LI941V 94841",
+        "30022062 ABS XR 410 NATUR": "A410-NP-K8I",
+        "ASA LI941V": "##########ASA LI941V",
+        "ASA LI941F-94841": "A941-F94841-OBI",
+        "LG LI941 F 94484 PIANO BLACK": "A941-F94484-OBI",
+        "ABS XR 410 NATUR": "A410-NP-K8I",
+        "ABS ER400-M95007": "A400-M95007-K8I",
+        "ASALI941-F94841 (9B9)": "A941-F94841-OBI",
+        "ABS 950kg XR410 9529": "##########ABS 950kg XR410 9529",
+        "ABS XR410 naturverpackt in Octabin": "A410-95296-OBI",
+        "ASA LI941 F94484 (LG)": "A941-V94841-OBI",
+        "ABS ER400 M95007 schwarz": "A400-M95007-K8I",
+        "ABS ER400 M97005 NEGRO": "A400-M95007-K8I",
+        "916502": "A410-95427-OBI",
+        "ASA LG LI941 -V94841": "############# ASA LG LI941 -V94841",
+        "ASA LG LI941 FXT ASA": "############# ASA LG LI941 FXT ASA",
+        "ABS ER459": "############## ABS ER459",
+        "L546405 ABS LG XR404T White 0B074": "A404T-0B074-KCI",
+        "T110281Q ABS LG CHEM XR404T Red RA": "A404T-4A700-K8I",
+        "None": "Material Code 모름"
+    }
+    return material.get(text, "") 
+
+## (H열) 마지막 줄 찾기
+def get_last_filled_row(ws, column_letter="H"):
+    column_index = column_index_from_string(column_letter)  # 'H' => 8
+    last_row = 6  # 최소 4행 보장 (H열 4행까지는 무조건 값이 있음)
+    
+    for row in range(6, ws.max_row + 1):  # 5행부터 검색
+        if ws.cell(row=row, column=column_index).value:  # 값이 있는 마지막 행 찾기
+            last_row = row
+    
+    return last_row  # 최소 4행 보장
+
+## 마지막 date-10주 계산 하기
+def date_neg_70days(ws):
+    column_index = column_index_from_string("G")
+    column_g = []
+    for row in range(6, ws.max_row + 1):  # 5행부터 검색
+        if ws.cell(row=row, column=column_index).value:  # 값이 있는 마지막 행 찾기
+            cell_value = ws.cell(row=row, column=column_index).value
+            column_g.append(cell_value)
+    if not column_g:
+        print("G6부터 시작하는 G열에 유효한 데이터가 없습니다.")
+        return None
+
+    last_rowt = ws.max_row + 2
+    last_row = int(last_rowt)
+    last_date = column_g[-1]
+    if len(last_date) == 8:
+        parsed_date = datetime.strptime(last_date, "%d-%m-%y")
     else:
-        print(f"{letter} is not in name ")
-print(f"   The TRUE score is {total_TRUE}")
-total_LOVE = 0
-for letter in "LOVE":
-    # print(letter)
-    if Upper_case.count(letter) > 0:
-        num = Upper_case.count(letter)
-        print(f"{letter} occures {num} time(s)")
-        total_LOVE+=num
-        # num=0
+        new_date = f"{last_date[:6]}{last_date[8:]}"
+        parsed_date = datetime.strptime(new_date, "%d-%m-%y")
+
+    if isinstance(parsed_date, (datetime, date)):
+        new_date = (parsed_date - timedelta(weeks=10)).date()
+
+    ws.merge_cells(f'B{last_row}:H{last_row}')
+    ws.row_dimensions[last_row].height = 25
+    ws[f'B{last_row}'] = f"Next Order Due Date: {new_date}"
+    ws[f'B{last_row}'].alignment = Alignment(horizontal='center', vertical='center')
+    ws[f'B{last_row}'].font = Font(size=15, bold=True, color='FF0000', name="Palatino Linotype")
+    thick_red = Side(style="thick", color="FF0000")
+    for column in range(2, 9):
+        cell = ws.cell(row=last_row, column=column)
+        if column == 2:
+            cell.border = Border(top=thick_red, left=thick_red, right=None, bottom=thick_red)
+        elif column == 8:
+            cell.border = Border(top=thick_red, left=None, right=thick_red, bottom=thick_red)
+        else:
+            cell.border = Border(top=thick_red, bottom=thick_red, left=None, right=None)
+
+    ws.merge_cells(f'A1:A2')
+    ws["A1"] = f'=IF(DATEVALUE(MID(B{last_row}, 22, 10))-TODAY()<0, "D+" & ABS(DATEVALUE(MID(B{last_row}, 22, 10))-TODAY()), "D-" & (DATEVALUE(MID(B{last_row}, 22, 10))-TODAY()))'
+    ws["A1"].font = Font(size=15, bold=True, color='FF1234') 
+    ws["A1"].alignment = Alignment(horizontal='center', vertical='center')
+    # ws[f'B{last_row}'].border = thick_border
+
+## 시트별 첫 두 행에 회사명 및 Material Code 추가
+def first_two_lows(name, ws, material):
+    ws.merge_cells('B1:H1')
+    ws.row_dimensions[1].height = 30
+    ws['B1'] = name
+    ws['B1'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B1'].font = Font(size=15, bold=True)
+
+    ws.merge_cells('B2:H2')
+    # ws.row_dimensions[2].height = 30
+    ws['B2'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B2'].font = Font(bold=True)
+    ws['B2'] = material
+
+## 시트별 디자인 구성성
+def get_or_create_sheet(wb, sheet_name):
+    """Excel 시트를 가져오거나 없으면 새로 생성"""
+
+    sheet_name = sheet_name[:31]
+    
+    if sheet_name in wb.sheetnames:
+        return wb[sheet_name]
+    
+    ws = wb.create_sheet(sheet_name)
+
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
+        ws.column_dimensions[col].width = 15
+    ws.column_dimensions['H'].width = 35
+
+    # 첫 번째 행: 파이썬 파일 돌린 시간
+    ws.merge_cells('B1:H1')
+    ws['B1'] = datetime.now()
+    ws['B1'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B1'].font = Font(bold=True)
+
+    # 두 번째 행: 뭐 적어야 되는지 모름
+    ws.merge_cells('B2:H2')
+    # ws.row_dimensions[2].height = 30
+    ws['B2'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B2'].font = Font(bold=True)
+    ws['B2'] = "JUN HYEOK LEE!!!!!! The Master of Logistics"
+
+    # 세 번째 행: 인바운드 & 아웃 바운드
+    ws.merge_cells('B3:D3')
+    Green_Fill = PatternFill(start_color="00FF00", end_color="FF9999", fill_type="mediumGray")
+    ws['B3'].fill = Green_Fill
+    ws['B3'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B3'].font = Font(bold=True)
+    ws['B3'] = "Inbound"
+
+    ws.merge_cells('F3:H3')
+    Red_Fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="mediumGray")
+    ws['F3'].fill = Red_Fill
+    ws['F3'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['F3'].font = Font(bold=True)
+    ws['F3'] = "Outbound"
+    
+    # 네 번째 행: 열 제목(데이터 종류)
+    ws.append(["Month", "PO No", "Date", "QTY (MT)", "On Stock", "QTY (MT)", "Date", "PO No", "Filename"])
+    for col in range(1,9):
+        cell = ws.cell(row=4, column=col)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center', vertical='center')        
+    
+    # 다섯 번째 행: 빈 값
+    ws.append([""] * 8)
+
+    return ws
+
+### 색상 추가 부분!! 필요 없을 경우 삭제
+def apply_conditional_formatting(ws, max_row):
+    """D3 값을 기준으로 D4:D1000 범위에 조건부 서식 적용"""
+
+    # if max_row is None or max_row < 7:
+    #     max_row = 100
+    
+    # 색상 정의
+    green_fill = PatternFill(start_color="00FF00", end_color="00FF00", fill_type="solid")  # 초록색
+    yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # 노란색
+    orange_fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")  # 주황색
+    red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")  # 빨간색
+
+    # 범위 정의
+    data_range = f"E6:E{max_row}"
+
+    # thick_border = Border(
+    #         left = Side(style="thick"),
+    #         right = Side(style="thick"),
+    #         top = Side(style="thick"),
+    #         bottom = Side(style="thick")
+    #     )
+    
+    # for row in range(6, max_row+1):
+    #     cell = ws.cell(row=row, column=5)
+    #     cell.border = thick_border
+
+    # 조건부 서식 추가 (D3을 기준으로 계산)
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["E6>=E$5*0.6"], stopIfTrue=True, fill=green_fill)  # 60% 이상 초록색
+    )
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["AND(E6>=E$5*0.4, E6<E$5*0.6)"], stopIfTrue=True, fill=yellow_fill)  # 40% 이상 노란색
+    )
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["AND(E6>0, E6<E$5*0.4)"], stopIfTrue=True, fill=orange_fill)  # 40% 미만 주황색
+    )
+    ws.conditional_formatting.add(
+        data_range,
+        FormulaRule(formula=["E6<0"], stopIfTrue=True, fill=red_fill)  # 음수(마이너스 값) 빨간색
+    )
+    # 0인 경우 색상 없음 (기본값 유지)
+
+    # 셀 테두리 변경
+    thick = Side(style="thick")
+    thin = Side(style="thin")
+    double = Side(style="double")
+    medium = Side(style="medium")
+
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=1):
+        for cell in row:
+            cell.border = Border(right=double)
+
+    for cell in ws[5]:
+        cell.border = Border(top=double)
+
+    ws['A5'].border = Border(right=double, top=double)
+
+    first_row = 4
+    last_row = max_row
+    column = 5
+    for row in range(first_row, last_row+1):
+        cell = ws.cell(row=row, column=column)
+        cell2 = ws.cell(row=row, column=1)
+
+        if row == first_row:
+            cell.border = Border(top=thick, left=thick, right=thick, bottom=None)
+            # cell2.border = Border(top=medium, left=medium, right=medium, bottom=None)
+        elif row == last_row:
+            cell.border = Border(top=None, left=thick, right=thick, bottom=thick)
+            # cell2.border = Border(top=None, left=medium, right=medium, bottom=medium)
+        else:
+            cell.border = Border(top=None, bottom=None, left=thick, right=thick)
+            # cell2.border = Border(top=None, bottom=None, left=medium, right=medium)
+
+
+
+######################################################
+################ 회사별 함수 분류 ######################
+######################################################
+
+# 기준: "SMP Ibérica S.L.U."
+def process_smp_iberica(text, filename, ws):
+    """SMP IBERICA S.L.U. /PALENCIA 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+
+    while i < len(cleaned_list):
+        if cleaned_list[i].strip().startswith("W ") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]}")
+            i+=2
+        elif cleaned_list[i].strip().endswith("number/date") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]}")
+            i+=2
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("9120491 ASA LI941 F94484 (LG)")
+
+        if "number/date" in line:
+            if len(extracted_text) >= 4:
+                pno = extracted_text[3]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno    
+
+        if line.startswith("W ") or line.startswith("D "):
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[2]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = int(quantity)/100000
+                    ### 시작
+                    written_date = f"{extracted_text[1][:2]}-{extracted_text[1][2:4]}-{extracted_text[1][4:]}"
+                    written_month = f"{mon(extracted_text[1][2:4])}-{extracted_text[1][6:]}"
+                    # print(f"[SMP Ibérica] 데이터 추가: {quantity}")
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+                    first_two_lows("SMP IBERICA S.L.U. /PALENCIA", ws, material)
+
+# 기준: "Samvardhana Motherson Peguform"
+def process_samvardhanaPeguform(text, filename, ws):
+    """Samvardhana Motherson 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+
+    while i < len(cleaned_list):
+        if cleaned_list[i].strip().endswith("number/date") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]}")
+            i+=2
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("9122188 ASA LI 941V NEGRO 9B9 (LG)")
+        
+        if "number/date" in line:
+            if len(extracted_text) >= 4:
+                pno = extracted_text[3]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno           
+        
+        if line.startswith("W ") or line.startswith("D "):
+            if len(extracted_text) >= 4:
+                quantity = extracted_text[3]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity)/100000
+                    written_date = f"{extracted_text[2][:2]}-{extracted_text[2][2:4]}-{extracted_text[2][4:]}"
+                    written_month = f"{mon(extracted_text[2][2:4])}-{extracted_text[2][6:]}"
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+                    first_two_lows("Samvardhana Motherson Peguform", ws, material)
+                    # print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
+
+# 기준: "Samvardhana Motherson Innovative"
+def process_samvardhanaInnovative(text, filename, ws):
+    """Samvardhana Motherson Innovative 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+    while i < len(cleaned_list):
+        if cleaned_list[i].strip().startswith("D") and i + 1 < len(cleaned_list):           
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} {cleaned_list[i+3]} {cleaned_list[i+4]}")
+            i+=5
+        elif cleaned_list[i].strip().startswith("Sch Agr No") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-1]} {cleaned_list[i]}")
+            i+=1
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("LG LI941V_V94841_ASA")
+        if "Sch Agr No" in line:
+            if len(extracted_text) >= 4:
+                pno = extracted_text[0]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno    
+        
+        if line.startswith("W ") or line.startswith("D"):
+            if "Date" not in line:
+                if len(extracted_text) >= 5:
+                    quantity = extracted_text[2]
+                    if quantity.isdigit() and int(quantity) > 0:
+                        qty = float(quantity)/100000
+                        written_date = f"{extracted_text[1][:2]}-{extracted_text[1][2:4]}-{extracted_text[1][4:]}"
+                        written_month = f"{mon(extracted_text[1][2:4])}-{extracted_text[1][6:]}"
+                        if written_date and pno:
+                            # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+                            ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename]) 
+                            first_two_lows("Samvardhana Motherson Innovative", ws, material)
+           
+# 기준: "PLASTICOS ABC SPAIN"
+def process_PLASTICOS(text, filename, ws):
+    """Plasticos abc Spain 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    material = get_materialcode("ABS ER400 M97005 NEGRO")
+
+    for line in cleaned_list:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "P/O" in line and "#:" in line:
+            if int(extracted_text[7]) > 0:
+                pno = extracted_text[7]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8                
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno
+        
+        if "Week" in line and len(extracted_text) > 5:
+            quantity = extracted_text[3]
+            if quantity.isdigit() and int(quantity) > 0:
+                qty = float(quantity)/100000
+                for_date = extracted_text[0].split("/")
+                if for_date[0] != "RELEASES":
+                    if len((for_date)[0]) < 2:
+                        for_date[0] = f"0{for_date[0]}"
+                    written_date = f"{for_date[0]}-{for_date[1]}-{for_date[2]}"
+                    written_month = f"{mon(for_date[1])}-{for_date[2]}"
+                    if written_date and pno:
+                        # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+                        ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename]) 
+                    # else:
+                    #     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+            # else:
+            #     print("숫자로 변환 불가")        
+            
+        if "Month" in line and len(extracted_text) > 5:
+            quantity = extracted_text[3]
+            if quantity.isdigit() and int(quantity) > 0:
+                qty = float(quantity)/100000
+                for_date = extracted_text[0].split("/")
+                if len((for_date)[0]) < 2:
+                    for_date[0] = f"0{for_date[0]}"
+                written_date = f"{for_date[0]}-{for_date[1]}-{for_date[2]}"
+                written_month = f"{mon(for_date[1])}-{for_date[2]}"
+                if written_date and pno:
+                    # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename]) 
+                # else:
+                #     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+            # else:
+            #     print("숫자로 변환 불가")
+
+        # date1 to date2 Floating Forecast 나왔을 경우 date2를 표시. >> for_date = extracted_text[2].split("/")
+        if "Floating" in line and len(extracted_text) > 8:
+            if "Forecast" in line:
+                quantity = extracted_text[5]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity)/100000
+                    for_date = extracted_text[2].split("/")
+                    if len((for_date)[0]) < 2:
+                        for_date[0] = f"0{for_date[0]}"
+                    written_date = f"{for_date[0]}-{for_date[1]}-{for_date[2]}"
+                    written_month = f"{mon(for_date[1])}-{for_date[2]}"
+                    if written_date and pno:
+                        # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+                        ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename]) 
+                    else:
+                        print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+
+        first_two_lows("PLASTICOS ABC SPAIN", ws, material)
+                    # ws.append([written_month, The_King, datetime.now().strftime("%Y-%m-%d"), The_King, "On Stock", qty, written_date, pno])
+                    # print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
+            # else:
+            #     print("숫자로 변환 불가")                        
+
+# 기준: "Biesterfeld Polybass S.p.A."
+def process_BiesterfeldPolybassSpA(text, filename, ws):
+    """Biesterfeld Polybass S.p.A. 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+    while i < len(cleaned_list):
+        if cleaned_list[i].strip().startswith("Currency") and i + 1 < len(cleaned_list):
+            if cleaned_list[i+2].strip().startswith("FCA") and i + 1 < len(cleaned_list):
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_Date")
+            i+=2
+        elif cleaned_list[i].strip().startswith("kg") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-4]} {cleaned_list[i]}")
+            i+=1
+        elif cleaned_list[i].strip().startswith("PO Number") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-1]} {cleaned_list[i]}")
+            i+=1
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+        material = get_materialcode("5335630000") 
+
+        if "Seob_Date" in line and len(extracted_text) >= 2:
+            written_date = f"{extracted_text[1][:2]}-{extracted_text[1][2:4]}-{extracted_text[1][4:]}"
+            written_month = f"{mon(extracted_text[1][2:4])}-{extracted_text[1][6:]}"
+        
+        if line.endswith("Number") and "PO" in line:
+            if int(extracted_text[0]) > 0:
+                pno = extracted_text[0]
+        
+        if line.endswith("kg") and len(extracted_text) >= 2:
+            quantity = extracted_text[0]
+            if quantity.isdigit() and int(quantity) > 0:
+                qty = float(quantity)/1000
+
+            first_two_lows("Biesterfeld Polybass S.p.A.", ws, material)
+            ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])    
+
+# 기준: "Hagstrasse 1"
+def process_Hagstrasse1(text, filename, ws):
+    """Hagstrasse 1 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+    while i < len(cleaned_list):
+        if "ABS LG ER400 M95007" in cleaned_list[i].strip():
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+2]} {cleaned_list[i+5]} {cleaned_list[i+6]}")
+            i+=6
+        elif "Bestelldatum" in cleaned_list[i].strip():
+            merge_lines.append(f"{cleaned_list[i-1]} {cleaned_list[i]} {cleaned_list[i+1]}")
+            i+=2
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ABS LG ER400 M95007 schwarz")
+        
+        if line.startswith("ABS LG ER400"):
+            if len(extracted_text) >= 5:
+                quantity = extracted_text[4]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity)/1000
+                    written_date = f"{extracted_text[6][:2]}-{extracted_text[6][2:4]}-{extracted_text[6][4:]}"
+                    written_month = f"{mon(extracted_text[6][2:4])}-{extracted_text[6][4:]}"
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, "pno", filename])
+                    first_two_lows("Hagstrasse 1", ws, material)
+                    # print(f"[Samvardhana Motherson] 데이터 추가: {quantity}")
+        if "Bestelldatum" in line:
+            if len(extracted_text) >= 3:
+                pno = extracted_text[0]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno          
+        
+        
+# 기준: "Maflow Plastics Poland"
+def process_MaflowPlastic(text, filename, ws):
+    """Maflow Plastic Poland 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    Weeks = ["Seob_First_Week"]
+    Quantities = ["Seob_Quantity"]
+    entries = []
+    while i < len(cleaned_list):
+        for The_Week in range(0,52):
+            if f"W{The_Week}" in cleaned_list[i].strip():
+                if "Supplied" in cleaned_list[i].strip():
+                    First_Week = cleaned_list[i].strip()[-3:]
+                    Weeks.append(f" {First_Week}")
+                elif len(cleaned_list[i].strip()) == len(f"W{The_Week}"):
+                    Weeks.append(f" W{The_Week}")
+                elif len(cleaned_list[i].strip().split()) >= 2:
+                    long_weeks = ""
+                    long_weeks = cleaned_list[i].strip().split()
+                    for each_week in long_weeks:
+                        if f"W{The_Week}" == each_week:
+                            Weeks.append(f" W{The_Week}")
+        if "DOSTAWCA" in cleaned_list[i].strip() and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_pno")
+            i+=2
+        elif "LG CHEMICAL LI 912 (ASA)" in cleaned_list[i].strip() and i + 1 < len(cleaned_list):
+            for The_Quantity in range(i+2, len(cleaned_list)):
+                Quantities.append(f" {cleaned_list[The_Quantity]}")
+            i+=1
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i+=1
+
+    cleaned_quantities = "".join(Quantities)
+    cleaned_weeks = "".join(Weeks)
+
+    merge_lines.append(cleaned_quantities)
+    merge_lines.append(cleaned_weeks)
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("0075A00054100GR")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_pno" in line:
+            if len(extracted_text) >= 2:
+                pno = extracted_text[1]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno 
+        
+        if "Seob_Quantity" in line:
+            Seob_Quantity = extracted_text[1:]
+        if "Seob_First_Week" in line:
+            # 초기화
+            New_Week = []
+            New_Month = []
+
+            # 주차 정보 리스트 추출 (extracted_text[1:] → ["W10", "W11", ...])
+            Seob_Week = extracted_text[1:]
+
+            for w_number in Seob_Week:
+                # 주 번호만 숫자로 추출 (ex: "W10" → 10)
+                week_num = int(w_number[1:])
+                
+                # 해당 주의 월요일 날짜 구하기
+                monday = datetime.strptime(f"{datetime.now().year}-W{week_num}-1", "%G-W%V-%u")
+                
+                # 일-월-년 형식으로 변경
+                date_str = monday.strftime("%d-%m-%Y")
+                
+                # 첫 열을 위해 열 표기 형식 변경
+                month_str = f"{mon(date_str[3:5])}-{date_str[8:]}"
+
+                # 리스트에 저장
+                New_Week.append(date_str)
+                New_Month.append(month_str)
+
+            # 수량과 주차 수가 동일한 경우에만 entries에 추가
+            if len(Seob_Quantity) == len(New_Week):
+                for qty, written_date, written_month in zip(Seob_Quantity, New_Week, New_Month):
+                    entries.append({"qty": qty, "written_date": written_date, "written_month": written_month, "pno": pno})
+
+    for entry in entries:
+        if int(entry["qty"]) > 0 and entry["written_date"] and entry["pno"]:
+            ws.append([entry["written_month"],
+                The_King,
+                The_King,
+                The_King,
+                "On Stock",
+                int(entry["qty"])/1000,
+                entry["written_date"],
+                entry["pno"],
+                filename
+            ])
+    first_two_lows("Maflow Plastics Poland", ws, material)
+            # print(f"✅ 추가됨: {entry['qty']}, {entry['written_date']}, {entry['pno']}")
+        # else:
+        #     print(f"❌ 정보 부족 → 건너뜀: {entry}")       
+
+# 기준: "ITW Slovakia s.r.o."
+def process_ITWSlovakiasro(text, filename, ws):
+    """ITW Slovakia s.r.o. 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+    while i < len(cleaned_list):
+        if cleaned_list[i].strip().endswith(" P") and i + 1 < len(cleaned_list):
+            if cleaned_list[i+4].strip().endswith(" P") and i + 1 < len(cleaned_list):
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} {cleaned_list[i+3]} Seob4")
+                i+=4
+            elif cleaned_list[i+4].strip().endswith("Sincerly"):
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} {cleaned_list[i+3]} Seob4")
+                i+=4
+            else:
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} {cleaned_list[i+3]} {cleaned_list[i+4]} Seob5")
+                i+=5
+        elif cleaned_list[i].strip().startswith("Number:") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]}")
+            i+=2
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("916502")
+
+        if "Number:" in line:
+            if len(extracted_text) >= 2:
+                pno = (f"{extracted_text[1]} {extracted_text[2]}")
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno 
+        
+        if line.endswith("Seob4"):
+            if len(extracted_text) >= 5:
+                quantity = extracted_text[3]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity)/100000
+                    if len(extracted_text[0]) == 5:
+                        for_date = f"0{extracted_text[0]}"
+                    else:
+                        for_date = extracted_text[0]
+                    written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                    written_month = f"{mon(for_date[2:4])}-{for_date[4:]}"
+                    if written_date and pno:
+                        # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+                        ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename]) 
+                    # else:
+                    #     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+
+        if line.endswith("Seob5"):
+            if len(extracted_text) >= 6:
+                quantity = extracted_text[4]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity)/100000
+                    if len(extracted_text[0]) == 5:
+                        for_date = f"0{extracted_text[0]}"
+                    else:
+                        for_date = extracted_text[0]
+                    written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                    written_month = f"{mon(for_date[2:4])}-{for_date[4:]}"
+                    if written_date and pno:
+                        # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+                        ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename]) 
+        first_two_lows("ITW Slovakia s.r.o.", ws, material)
+                    # else:
+                    #     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+
+# 기준: "Boryszew Kunststofftechnik"
+def process_BoryszewKunststofftechnik(text, filename, ws):
+    """Boryszew Kunststoff technik 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+    while i < len(cleaned_list):
+        if cleaned_list[i].strip().endswith("Gesamtpreis") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+3]} {cleaned_list[i+6]} Seob_Gesamtpreis")
+            i+=6
+        elif "Liefertermin:" in cleaned_list[i] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]}")
+            i+=2
+        elif cleaned_list[i].strip().startswith("Hiermit bestellen") and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-2]} {cleaned_list[i]} Seob_PO")
+            i+=1
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ABS XR410 naturverpackt in Octabin")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_PO" in line:
+            if len(extracted_text) >= 2:
+                pno = (f"{extracted_text[0]}")
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno 
+
+        if "Liefertermin:" in line:
+            for_date = extracted_text[1]
+            written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+            written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+            for row in range(6, ws.max_row + 1):
+                    cell = ws.cell(row=row, column=7)
+                    cell2 = ws.cell(row=row, column=1)
+                    cell.value = written_date 
+                    cell2.value = written_month
+       
+        if "Seob_Gesamtpreis" in line:
+            if len(extracted_text) >= 4:
+                quantity = extracted_text[2]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity)/1000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+                    first_two_lows("Boryszew Kunststofftechnik", ws, material)
+                    # print(f"[ITWSlovakia] 데이터 추가: {quantity}")         
+
+# 기준: "PCZ-571 01 MORAVSKA TREBOVA"
+def process_ProXMORAVSKATREBOVA(text, filename, ws):
+    """CZ-571 01 MORAVSKA TREBOVA 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    merge_lines = []
+
+    # 임시 저장용 변수들
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    while i < len(cleaned_list):
+        if "Bestellnummer / Datum" in cleaned_list[i] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_Bestellnummer")
+            i += 2
+        elif "Lieferdatum" in cleaned_list[i] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_Date")
+            i += 2
+        elif "LG ASA LI941" in cleaned_list[i] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
+            i += 2
+        else:
+            merge_lines.append(cleaned_list[i])
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        if "LG ASA LI941-V - 94841 (VW9B9) (SILO)" in line:
+            material = get_materialcode("LG ASA LI941-V - 94841 (VW9B9) (SILO)")
+            C_Name = "Pro-X MORAVSKA TREBOVA"
+        elif "LG ASA LI941-F - 94841 (VW9B9) AEB" in line:
+            material = get_materialcode("LG ASA LI941-F - 94841 (VW9B9) AEB")
+            C_Name = "Pro-X FEUCHTWANGEN"
+        elif "LG ASA LI941 - V94841 (VW9B9) BigBag" in line:
+            material = get_materialcode("LG ASA LI941 - V94841 (VW9B9) BigBag")
+            C_Name = "Pro-X  Eckerle Spritz"
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_Bestellnummer" in line and len(extracted_text) >= 8:
+            pno = extracted_text[5]
+            # print(f"📌 날짜/PNO 저장: {written_date}, {pno}")
+
+        if "Seob_Date" in line and len(extracted_text) >= 2:
+            for_date = extracted_text[1]
+            written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+            written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+
+        if "Seob_qty" in line and len(extracted_text) >= 9:
+            quantity = extracted_text[7]
+            if quantity.isdigit() and int(quantity) > 0:
+                qty = float(quantity) / 1000000
+                if written_date and pno:
+                    # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+                    first_two_lows(C_Name, ws, material)
+                # else:
+                    # print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+
+# 기준: "Finke Anwendungstechnik GmbH"
+def process_FinkeAnwendungstechnik(text, filename, ws):
+    """Finke Anwendungstechnik GmbH 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+    entries = []  # 여기서 모든 qty와 그 시점의 context(pno, date 등)를 저장
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Bestellung Nr:" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif "Liefertermin:" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} Seb_Date")
+            i += 1
+        elif "Gesamt Netto" in line and i + 1 < len(cleaned_list):
+            end = i - 5
+            for kg in range(i, end, -1):
+                parts = cleaned_list[kg].split()
+                if len(parts) >= 2 and parts[1].upper() == "KG":
+                    merge_lines.append(f"{cleaned_list[kg]} Seob_qty")
+            i += 1
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+        if "High gloss ASA: LI941F" in line:
+            material = get_materialcode("High gloss ASA: LI941F Piano Black (F94484)")
+            # first_two_lows("Finke Anwendungstechnik GmbH", ws, material)
+        elif "ABS XR 401 BK 9001" in line:
+            material = get_materialcode("ABS XR 401 BK 9001")
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 5:
+                pno = extracted_text[2]
+        elif "Seob_qty" in line:
+            if len(extracted_text) >= 2:
+                quantity = extracted_text[0]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 100000
+        elif "Seb_Date" in line:
+            if len(extracted_text) >= 2:
+                for_date = extracted_text[1]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+                entries.append({"qty": qty, "written_date": written_date, "written_month": written_month, "pno": pno})
+
+    for entry in entries:
+        if entry["written_date"] and entry["pno"]:
+            ws.append([entry["written_month"],
+                The_King,
+                The_King,
+                The_King,
+                "On Stock",
+                entry["qty"],
+                entry["written_date"],
+                entry["pno"],
+                filename
+            ])
+    first_two_lows("Finke Anwendungstechnik GmbH", ws, material)
+            # print(f"✅ 추가됨: {entry['qty']}, {entry['written_date']}, {entry['pno']}")
+        # else:
+        #     print(f"❌ 정보 부족 → 건너뜀: {entry}")
+
+# 기준: "Formzeug GmbH"
+def process_FormzeugGmbH(text, filename, ws):
+    """Formzeug GmbH 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    written_date = ""
+    written_month = ""
+    pno = ""
+    i = 0
+    merge_lines = []
+    while i < len(cleaned_list):
+        if "Bestellung " in cleaned_list[i].strip() and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i+=2
+        elif "ASA LI941-F94484" in cleaned_list[i].strip() and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-2]} {cleaned_list[i]} Seob_qty")
+            i+=1
+        elif "Lieferanschrift" in cleaned_list[i].strip() and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-2]} Seob_date")
+            i+=1
+        else:
+            merge_lines.append(str(cleaned_list[i]))
+            i += 1
+    
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("High gloss ASA LI941-F94484 (Piano Black)")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_BestellungNr" in line:
+            pno = extracted_text[1]
+            for row in range(6, ws.max_row + 1):
+                    cell_pno = ws.cell(row=row, column=8)
+                    cell_pno.value = pno        
+       
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 5:
+                quantity = extracted_text[0]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity)/1000
+
+        if "Seob_date" in line:
+            for_date = extracted_text[0]
+            written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+            written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+                    # print(f"✅ 저장된 정보 기반 데이터 추가: {qty}, {written_date}, {pno}")
+            ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename]) 
+            first_two_lows("Formzeug GmbH", ws, material)
+                    # else:
+                    #     print("❌ 날짜나 PNO 정보가 누락됨 → 건너뜀")
+
+# 기준: "ABC Technologies Karl Etzel GmbH"
+def process_ABCTechnologiesKEGmbH(text, filename, ws):
+    """ABC Technologies Karl Etzel GmbH 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+    entries = []  # 여기서 모든 qty와 그 시점의 context(pno, date 등)를 저장
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Belegnummer:" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i-5]} {cleaned_list[i]} Seob_BestellungNr")
+            i += 1
+        elif "ABS062" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
+            i += 1
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ABS ER400 M95007 schwarz")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 2:
+                pno = extracted_text[0]
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[1]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 100000
+                    
+        if "Liefertermin:" in line and len(extracted_text) == 2:
+            for_date = extracted_text[1]
+            written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+            written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+            if pno and written_date:
+                entries.append({"qty": qty, "written_date": written_date, "written_month": written_month, "pno": pno})
+                # print(f"✅ qty 추가됨: {qty}, {written_date}, {pno}")
+            # else:
+            #     pending_qty = qty
+            #     print(f"⏸ 날짜 없음, pending에 저장: {pending_qty}")
+
+    for entry in entries:
+        if entry["written_date"] and entry["pno"]:
+            ws.append([entry["written_month"],
+                The_King,
+                The_King,
+                The_King,
+                "On Stock",
+                entry["qty"],
+                entry["written_date"],
+                entry["pno"],
+                filename
+            ])
+
+    first_two_lows("ABC Technologies Karl Etzel GmbH", ws, material)
+            # print(f"✅ 추가됨: {entry['qty']}, {entry['written_date']}, {entry['pno']}")
+        # else:
+        #     print(f"❌ 정보 부족 → 건너뜀: {entry}")
+
+# 기준: "Plant Oldenburg"
+def process_PlantOldenburg(text, filename, ws):
+    """Plant Oldenburg 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        temp_text = ""
+        if "Lieferplannummer/Datum" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif cleaned_list[i][0] == "T" and cleaned_list[i][6:8] == "20":
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
+            i += 2
+        # 뻘짓이었으나 로직이 아까워서 살림. 아래것
+        elif "KG" in line and i + 1 < len(cleaned_list):
+            temp_text+= cleaned_list[i-1] + " " + cleaned_list[i+1]
+            D_Date = temp_text.split()
+            if "202" in D_Date[2].strip() and int(D_Date[0]) > 0:
+                merge_lines.append(f"{temp_text}")
+            i += 2
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("30022028 LG LI941-F 94484 PIANO BLACK")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[2]
+                for_date = extracted_text[1]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 1000000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 2:
+                pno = extracted_text[1]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("Plant Oldenburg", ws, material)
+
+# 기준: "c/o Linden GmbH"
+def process_coLindenGmbH(text, filename, ws):
+    """c/o Linden GmbH 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Lieferplannummer/Datum" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif "number/date" in line  and i + 1 < len(cleaned_list):
+            merge_lines.append(f"Seob_BestellungNr {cleaned_list[i+1]} Seob_BestellungNr")
+            i+=2
+        elif "KG" in line and i + 1 < len(cleaned_list):
+            temp_first = ""
+            if cleaned_list[i-2][0] == "T":
+                merge_lines.append(f"{cleaned_list[i-2]} {cleaned_list[i-1]} {cleaned_list[i]} Seob_qty")
+            elif cleaned_list[i-2][0] == "M":
+                Monday = first_monday(cleaned_list[i-2][1:4], cleaned_list[i-2][4:])
+                temp_first = cleaned_list[i-2][0] + " 0" + str(Monday) + cleaned_list[i-2][1:].replace(" ","")
+                merge_lines.append(f"{temp_first} {cleaned_list[i-1]} {cleaned_list[i]} Seob_qty")
+            i += 1
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        if "30021896 LG LI941V 94841" in line:
+            material = get_materialcode("30021896 LG LI941V 94841")
+        elif "30022062 ABS XR 410 NATUR" in line:
+            material = get_materialcode("30022062 ABS XR 410 NATUR")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 5:
+                quantity = extracted_text[3]
+                for_date = extracted_text[1]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 1000000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 3:
+                pno = extracted_text[1]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("C/O Linden GmbH", ws, material)
+
+# 기준: "Plant Neustadt"
+def process_PlantNeustadt(text, filename, ws):
+    """Plant Neustadt 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Purchase Order:" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} Seob_BestellungNr")
+            i += 1
+        elif "ABS 950kg XR410 9529" in line and i + 1 < len(cleaned_list):
+            if "kg" in cleaned_list[i+1] and "Delivery date:" in cleaned_list[i+5]:
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+5]} Seob_qty")
+            i += 1
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ABS 950kg XR410 9529")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 9:
+                quantity = extracted_text[4]
+                for_date = extracted_text[8]
+                written_date = f"{for_date[9:]}-{rev_mon(for_date[5:8])}-{for_date[:4]}"
+                written_month = f"{for_date[5:8]}-{for_date[2:4]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 100000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 3:
+                pno = extracted_text[2]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("Plant Neustadt", ws, material)
+
+# Material Code = "ASA LI941 F94484 (LG)" 경우에는 Iberica SLU 와 중복 값
+# 기준: "SMP Automotive Technology Ibérica SLU"
+def process_SMPAutomotiveTechnologyIbéricaSLU(text, filename, ws):
+    """SMP Automotive Technology Ibérica SLU 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Purchase Order:" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} Seob_BestellungNr")
+            i += 1
+        elif "ASA LI941 F94484 (LG)" in line and i + 1 < len(cleaned_list):
+            if "kg" in cleaned_list[i+1].lower() and "Delivery date:" in cleaned_list[i+5]:
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+5]} Seob_qty")
+            i += 2
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ASA LI941 F94484 (LG)")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 9:
+                quantity = extracted_text[4]
+                for_date = extracted_text[8]
+                written_date = f"{for_date[9:]}-{rev_mon(for_date[5:8])}-{for_date[:4]}"
+                written_month = f"{for_date[5:8]}-{for_date[2:4]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 100000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 3:
+                pno = extracted_text[2]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("SMP Automotive Technology Ibérica SLU", ws, material)              
+
+# 기준: "SMR Automotive Mirror Technology"
+def process_SMRAutomotiveMirrorTechnology(text, filename, ws):
+    """SMR Automotive Mirror Technology 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "number/date" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif "T" in cleaned_list[i][0] and i + 1 < len(cleaned_list):
+            if "kg" in cleaned_list[i+2].lower() and cleaned_list[i][6:8] == "20":
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} Seob_qty")
+            i += 3
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        if "ASA LI941V" in line:
+            material = get_materialcode("ASA LI941V")
+        elif "ASA LI941F-94841" in line:
+            material = get_materialcode("ASA LI941F-94841")
+        elif "LG LI941 F 94484 PIANO BLACK" in line:
+            material = get_materialcode("LG LI941 F 94484 PIANO BLACK")
+
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 5:
+                quantity = extracted_text[2]
+                for_date = extracted_text[1]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 1000000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 6:
+                pno = extracted_text[3]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("SMR Hungary Bt", ws, material)
+
+# 기준: "Plant Schierling"
+def process_PlantSchierling(text, filename, ws):
+    """Plant Schierling 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Lieferplannummer/Datum" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif cleaned_list[i][0] == "T" and cleaned_list[i][6:8] == "20":
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
+            i += 2
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ABS XR 410 NATUR")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[2]
+                for_date = extracted_text[1]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 1000000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 2:
+                pno = extracted_text[1]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("Plant Schierling", ws, material)
+
+# 기준: "Uwe Etzel GmbH"
+def process_UweEtzelGmbH(text, filename, ws):
+    """Uwe Etzel GmbH 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "BESTELLUNG" in line and "Seite:" in cleaned_list[i+2] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif cleaned_list[i].startswith("ABS032") and "kg" in cleaned_list[i+1].strip():
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
+            i += 2
+        elif "Liefertermin:" in cleaned_list[i] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_Date")
+            i += 2
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ABS ER400-M95007")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[1]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 100000           
+
+        if "Seob_Date" in line:
+            if len(extracted_text) >= 3:
+                for_date = extracted_text[1]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+                ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 2:
+                pno = extracted_text[1]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("Uwe Etzel GmbH", ws, material)
+
+# 기준: "SLM Kunststofftechnik GmbH"
+def process_SLMKunststofftechnikGmbH(text, filename, ws):
+    """SLM Kunststofftechnik GmbH 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Bestellnummer" in line and "Datum" in cleaned_list[i+2] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif "101505" in cleaned_list[i].strip() and "kg" in cleaned_list[i+2].lower():
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_qty")
+            i += 2
+        elif "Lieferdatum" in cleaned_list[i] and "Sehr" in cleaned_list[i+2] and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_Date")
+            i += 2
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        material = get_materialcode("ASALI941-F94841 (9B9)")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")                   
+
+        if "Seob_Date" in line:
+            if len(extracted_text) >= 2:
+                for_date = extracted_text[1]
+                written_date = f"{for_date[:2]}-{for_date[2:4]}-{for_date[4:]}"
+                written_month = f"{mon(for_date[2:4])}-{for_date[6:]}"
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 3:
+                quantity = extracted_text[2]
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 100000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 2:
+                pno = extracted_text[1]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("SLM Kunststofftechnik GmbH", ws, material)
+
+# 기준: SMR AUTOMOTIVE SYSTEMS SPAIN SAU에 있는 PO Numbers
+def process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws):
+    """SMR AUTOMOTIVE SYSTEMS SPAIN SAU 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Purchase Order" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} Seob_BestellungNr")
+            i += 2
+        elif cleaned_list[i][6:8] == "20" and i+1 < len(cleaned_list):
+            if cleaned_list[i+1].strip() == "F" or cleaned_list[i+1].strip() == "P":
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} {cleaned_list[i+3]} {cleaned_list[i+4]} Seob_qty")
+                i += 3
+            i+=1
+        else:
+            merge_lines.append(line)
+            i += 1
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        if "ASA LG LI941 -V94841" in line:
+            material = get_materialcode("ASA LG LI941 -V94841")
+        elif "ASA LG LI941 FXT ASA" in line:
+            material = get_materialcode("ASA LG LI941 FXT ASA")
+        elif "ABS ER459" in line:
+            material = get_materialcode("ABS ER459")
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")                   
+
+        if "Seob_qty" in line:
+            if len(extracted_text) >= 4:
+                quantity = extracted_text[2]
+                for_date = extracted_text[0]
+                written_date = f"{for_date[:2]}-{for_date[3:5]}-{for_date[6:]}"
+                written_month = f"{mon(for_date[3:5])}-{for_date[8:]}"
+                if quantity.isdigit() and int(quantity) > 0:
+                    qty = float(quantity) / 1000
+                    ws.append([written_month, The_King, The_King, The_King, "On Stock", qty, written_date, pno, filename])
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 4:
+                pno = extracted_text[3]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+    first_two_lows("SMR AUTOMOTIVE SYSTEMS SPAIN SAU", ws, material)
+
+# 기준: "T110281Q ABS LG CHEM XR404T Red RA" or "L546405 ABS LG XR404T White 0B074"
+def process_ValeoRomania(text, filename, ws):
+    """Valeo Romania 문서를 처리하는 함수"""
+    print(f"📄 Processing file: {filename}")
+
+    lines = text.replace(",", "").replace(".", "").split("\n")
+    cleaned_list = [item.strip() for item in lines if item.strip()]
+    i = 0
+    merge_lines = []
+    written_date = ""
+    written_month = ""
+    pno = ""
+    entries = []
+    new_month_list = []
+    new_date_list = []
+    material = None
+
+    while i < len(cleaned_list):
+        line = cleaned_list[i]
+        if "Sched" in line and "agreement" in line and i + 1 < len(cleaned_list):
+            merge_lines.append(f"{cleaned_list[i]} Seob_BestellungNr")
+            i += 1
+        elif cleaned_list[i].startswith("D") and "/" in cleaned_list[i] and i+1 < len(cleaned_list):
+            if cleaned_list[i+1].startswith("D") and "/" in cleaned_list[i]:
+                merge_lines.append(f"{cleaned_list[i]} {cleaned_list[i+1]} {cleaned_list[i+2]} Seob_Date")
+            i+=3
+        elif cleaned_list[i-1].startswith("D") and cleaned_list[i-1].count("D") == 6:
+            if cleaned_list[i].startswith("Material"):
+                merge_lines.append(f"{' '.join(cleaned_list[i + j] for j in range(1,11))} Seob_Qty")
+            else:
+                merge_lines.append(f"{' '.join(cleaned_list[i + j] for j in range(0,10))} Seob_Qty")
+            i+=10
+        elif cleaned_list[i-1].startswith("D") and "/" in cleaned_list[i-1]:
+            ccount = cleaned_list[i-1].count("D")
+            if cleaned_list[i].startswith("Material"):
+                merge_lines.append(f"{' '.join(cleaned_list[i + j] for j in range(1,ccount+5))} Seob_Qty")
+            else:
+                merge_lines.append(f"{' '.join(cleaned_list[i + j] for j in range(0,ccount+4))} Seob_Qty")
+            i+=9
+        else:
+            merge_lines.append(line)
+            i += 1                  
+
+    temp_date_list = []  # ✅ Seob_Date 처리 직후, 해당 세트에만 쓸 날짜들
+    temp_month_list = []
+
+    for line in merge_lines:
+        extracted_texts = re.split(r'\s+', line)
+        extracted_text = [item for item in extracted_texts if item.strip()]
+        # print(f"@@@@@@@@@@@@@@@line {line}")
+        # print(f"@@@@@@@@@@@@@@@extracted_text {extracted_text}")   
+
+        if "T110281Q ABS LG CHEM XR404T Red RA" in line:
+            material = get_materialcode("T110281Q ABS LG CHEM XR404T Red RA")
+        elif "L546405 ABS LG XR404T White 0B074" in line:
+            material = get_materialcode("L546405 ABS LG XR404T White 0B074")
+
+        if "Seob_BestellungNr" in line:
+            if len(extracted_text) >= 4:
+                pno = extracted_text[2]
+                first_row = 6
+                last_row = ws.max_row
+                column = 8
+                for row in range(first_row, last_row+1):
+                    cell = ws.cell(row=row, column=column)
+                    cell.value = pno  
+
+        if "Seob_Date" in line:
+            count_date = line.split("D ")
+            new_count_date = [item.strip().replace(' Seob_Date', '') for item in count_date if item.strip()]
+            temp_date_list = []
+            temp_month_list = []
+            for temp_date in new_count_date:
+                e_date = temp_date.strip().split("/")
+                temp_month = f"{mon(e_date[1])}-{e_date[2]}"
+                full_date = f"{e_date[0]}-{e_date[1]}-{e_date[2]}"
+                temp_month_list.append(temp_month)
+                temp_date_list.append(full_date)
+
+        if "Seob_Qty" in line:
+            count_qty = line.split()
+            new_count_qty = count_qty[:-1]  # Seob_Qty를 제거한 수량 리스트
+            if len(extracted_text) >= 3:
+                if len(temp_date_list) == len(new_count_qty):
+                    for qty, written_date, written_month in zip(new_count_qty, temp_date_list, temp_month_list):
+                        entries.append({
+                            "qty": qty,
+                            "written_date": written_date,
+                            "written_month": written_month,
+                            "pno": pno
+                        })
+                    # ✅ 사용 완료했으면 임시 리스트 초기화
+                    temp_date_list = []
+                    temp_month_list = []
+                else:
+                    print(f"❗ 매칭 오류: 날짜 개수({len(temp_date_list)})와 수량 개수({len(new_count_qty)}) 불일치")
+
+
+    for entry in entries:
+        if int(entry["qty"]) > 0 and entry["written_date"] and entry["pno"]:
+            ws.append([entry["written_month"],
+                The_King,
+                The_King,
+                The_King,
+                "On Stock",
+                int(entry["qty"])/1000,
+                entry["written_date"],
+                entry["pno"],
+                filename
+            ])
+    first_two_lows("Valeo Romania", ws, material)
+
+#########################################################
+################ 회사별 함수 분류 끝 #####################
+#########################################################
+
+
+def extract_info(folder_path, output_excel):
+    """폴더 내 모든 PDF를 읽고 키워드별로 처리"""
+    extracted_data = []
+    No_Key_Word = []
+
+    # 기존 Excel 파일이 있으면 로드, 없으면 새 파일 생성
+    if os.path.exists(output_excel):
+        wb = openpyxl.load_workbook(output_excel)
     else:
-        print(f"{letter} is not in name ")
-print(f"   The LOVE score is {total_LOVE}")
-True_Score = total_TRUE*10
-Score = True_Score + total_LOVE
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)  # 기본 생성되는 'Sheet' 삭제
 
-if Score < 10 or Score > 90:
-    print(f"\nYour score is {Score}, you go together like coke and mentos")
-elif Score >=40 and Score <= 50:
-    print(f"\nYour score is {Score}, you are alright together")
-else:
-    print("\n#######################")
-    print(f"Your total score is {Score}")
-    print("#######################")
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith(".pdf"):
+            file_path = os.path.join(folder_path, filename)
 
+            try:
+                doc = fitz.open(file_path)
+                full_text = ""
 
-# Treasure Island game
+                for page in doc:
+                    text = page.get_text("text")
+                    full_text+=text
+                    # print(f"📄 {filename} - 페이지 텍스트 읽음")
+                    # print(f"@@@@ Text 임: {text}")
 
-print("Welcome to Treasure Island.\nYour mission is to find the treasure.\n")
-leftorright = input("Choose 'left' or 'right': ")
-if leftorright == "right":
-    print("Game Over")
-elif leftorright == "left":
-    print("You survived!!")
-    swimorwait = input("Choose 'swim' or 'wait': ")
-    if swimorwait == "swim":
-        False
-    elif swimorwait == "wait":
-        print("You survived!!")
-        door = input("Choose 'red' or 'blue' or 'yellow': ")
-        if door == "red":
-            False
-        elif door == "blue":
-            False
-        elif door == "yellow":
-            print("You Win!!!!!")
+                    if "SMP Ibérica S.L.U." in text and text != full_text:
+                        ws = get_or_create_sheet(wb, "SMP IBERICA S.L.U. PALENCIA")
+                        process_smp_iberica(full_text, filename, ws)
+
+                    elif "Samvardhana Motherson Peguform" in text:
+                        ws = get_or_create_sheet(wb, "Samvardhana Motherson Peguform")
+                        process_samvardhanaPeguform(text, filename, ws)
+
+                    elif "Samvardhana Motherson Innovative" in text:
+                        ws = get_or_create_sheet(wb, "Samvardhana Motherson Innovative")
+                        process_samvardhanaInnovative(text, filename, ws)
+
+                    elif "Biesterfeld Polybass S.p.A." in text and "5335630000" in text:
+                        ws = get_or_create_sheet(wb, "Biesterfeld Polybass S.p.A.")
+                        process_BiesterfeldPolybassSpA(text, filename, ws)
+
+                    elif "PLASTICOS ABC SPAIN" in text:
+                        ws = get_or_create_sheet(wb, "PLASTICOS ABC SPAIN")
+                        process_PLASTICOS(text, filename, ws)
+
+                    elif "Hagstrasse 1" in text:
+                        ws = get_or_create_sheet(wb, "Hagstrasse 1")
+                        process_Hagstrasse1(text, filename, ws)
+                        
+                    elif "Maflow Plastics Poland" in text:
+                        ws = get_or_create_sheet(wb, "Maflow Plastics Poland")
+                        process_MaflowPlastic(text, filename, ws)
+
+                    elif "ITW Slovakia s.r.o." in text:
+                        ws = get_or_create_sheet(wb, "ITW Slovakia s.r.o.")
+                        process_ITWSlovakiasro(text, filename, ws)
+
+                    elif "Boryszew Kunststofftechnik" in text:
+                        ws = get_or_create_sheet(wb, "Boryszew Kunststofftechnik")
+                        process_BoryszewKunststofftechnik(text, filename, ws)
+
+                    elif "Pro-X Automotive AG" in text:
+                        if "CZ-571 01 MORAVSKA TREBOVA" in text:
+                            ws = get_or_create_sheet(wb, "Pro-X MORAVSKA TREBOVA")
+                            process_ProXMORAVSKATREBOVA(text, filename, ws)
+                        elif "D-91555 FEUCHTWANGEN" in text:
+                            ws = get_or_create_sheet(wb, "Pro-X FEUCHTWANGEN")
+                            process_ProXMORAVSKATREBOVA(text, filename, ws)
+                        elif "Eckerle Spritz" in text:
+                            ws = get_or_create_sheet(wb, "Pro-X Eckerle Spritz")
+                            process_ProXMORAVSKATREBOVA(text, filename, ws)
+
+                    elif "Finke Anwendungstechnik GmbH" in text:
+                        if "ABS XR 401 BK 9001" in text:
+                            ws = get_or_create_sheet(wb, "Finke Anwendungstechnik_A401-9001-K8")
+                            process_FinkeAnwendungstechnik(text, filename, ws)
+                        elif "High gloss ASA: LI941F" in text:
+                            ws = get_or_create_sheet(wb, "Finke Anwendungstechnik_A941-F94484-OBI")
+                            process_FinkeAnwendungstechnik(text, filename, ws)
+
+                    elif "Formzeug GmbH" in text:
+                        ws = get_or_create_sheet(wb, "Formzeug GmbH")
+                        process_FormzeugGmbH(text, filename, ws)
+                        
+                    elif "ABC Technologies Karl Etzel GmbH" in text and text != full_text:
+                        ws = get_or_create_sheet(wb, "ABC Technologies Karl Etzel GmbH")
+                        process_ABCTechnologiesKEGmbH(full_text, filename, ws)       
+
+                    elif "Plant Oldenburg" in text:
+                        ws = get_or_create_sheet(wb, "Plant Oldenburg")
+                        process_PlantOldenburg(text, filename, ws)      
+
+                    elif "c/o Linden GmbH" in text:
+                        if "30022062 ABS XR 410 NATUR" in text:
+                            ws = get_or_create_sheet(wb, "CO Linden GmbH_A410-NP-K8I")
+                            process_coLindenGmbH(text, filename, ws)
+                        elif "30021896 LG LI941V 94841" in text:
+                            ws = get_or_create_sheet(wb, "CO Linden GmbH_!!!!!!30021896 LG LI941V 94841")
+                            process_coLindenGmbH(text, filename, ws)
+
+                    elif "Plant Neustadt" in text:
+                        ws = get_or_create_sheet(wb, "Plant Neustadt")
+                        process_PlantNeustadt(text, filename, ws)
+
+                    elif "SMP Automotive Technology Ibérica SLU" in text:
+                        ws = get_or_create_sheet(wb, "SMP Automotive Technology Ibérica SLU")
+                        process_SMPAutomotiveTechnologyIbéricaSLU(text, filename, ws)
+
+                    elif "SMR Automotive Mirror Technology" in text:
+                        if "ASA LI941V" in text:
+                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_!!!!!ASA LI941V")
+                            process_SMRAutomotiveMirrorTechnology(text, filename, ws)
+                        elif "LG LI941 F 94484 PIANO BLACK" in text:
+                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_A941-F94484-OBI")
+                            process_SMRAutomotiveMirrorTechnology(text, filename, ws)
+                        elif "ASA LI941F-94841" in text:
+                            ws = get_or_create_sheet(wb, "SMR Hungary Bt_A941-F94841-OBI")
+                            process_SMRAutomotiveMirrorTechnology(text, filename, ws)
+
+                    elif "Plant Schierling" in text:
+                        ws = get_or_create_sheet(wb, "Plant Schierling")
+                        process_PlantSchierling(text, filename, ws)
+                            
+                    elif "Uwe Etzel GmbH" in text:
+                        ws = get_or_create_sheet(wb, "Uwe Etzel GmbH")
+                        process_UweEtzelGmbH(text, filename, ws)
+
+                    elif "SLM Kunststofftechnik GmbH" in text:
+                        ws = get_or_create_sheet(wb, "SLM Kunststofftechnik GmbH")
+                        process_SLMKunststofftechnikGmbH(text, filename, ws)
+
+                    elif "SUPPLIER SCHEDULE / MATERIAL RELEASE" in text:
+                        if "ASA LG LI941 -V94841" in text:
+                            ws = get_or_create_sheet(wb, "SMR AUTOMOTIVE_ASA LG LI941")
+                            process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws)
+                        elif "ASA LG LI941 FXT ASA" in text:
+                            ws = get_or_create_sheet(wb, "SMR AUTOMOTIVE_ASA LG LI941 FXT ASA")
+                            process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws)
+                        elif "ABS ER459" in text:
+                            ws = get_or_create_sheet(wb, "SMR AUTOMOTIVE_ABS ER459")
+                            process_SMRAUTOMOTIVESYSTEMSSPAINSAU(text, filename, ws)
+
+                    elif "T110281Q ABS LG CHEM XR404T Red RA" in text:
+                        ws = get_or_create_sheet(wb, "Valeo Romania_A404T-4A700-K8I")
+                        process_ValeoRomania(text, filename, ws)
+
+                    elif "L546405 ABS LG XR404T White 0B074" in text:
+                        ws = get_or_create_sheet(wb, "Valeo Romania_A404T-0B074-KCI")
+                        process_ValeoRomania(text, filename, ws)
+
+                    else:
+                        print(f"⚠️ {filename}: 지정된 키워드 없음. 스킵.")
+                        No_Key_Word.append(filename)
+                        print(f"작업 진행 되어야 되는 파일들: {No_Key_Word}")
+
+            except Exception as e:
+                print(f"❌ {filename} 처리 중 오류 발생: {e}")
+
+    for sheet in wb.sheetnames:
+        ws = wb[sheet]
+
+        max_row_f = ws.max_row
+        for row in range(max_row_f, 0, -1):
+            if ws[f'F{row}'].value is not None:
+                last_row_f = row
+
+                #######################################
+                ## 값 못 받아오는 부분 때문에 임시 코드 ##
+                #######################################
+                if last_row_f < 6:
+                    last_row_f = 6
+                break
+
+        for row in range(6, last_row_f + 1):
+            F_value = f"F{row}"
+            if F_value:
+                ws[f"E{row}"] = f"=E{row-1}-F{row}"
+        
+        ## PO Number page가 달라 못받을 경우 H6에 있는 값 받아오기
+        fill_missing_pno(ws)
+
+        ## 색상 추가!! 필요 없을 경우 아래 한줄만 삭제
+        apply_conditional_formatting(ws, last_row_f)  # 각 시트에 조건부 서식 적용
+
+        ## 마지막 날짜 - 70일에 해당하는 날짜 구하기
+        date_neg_70days(ws)
+
+        ## I열 (파일명) 숨김 처리
+        ws.column_dimensions['I'].hidden = True
+
+        ws.freeze_panes = 'B5'
+
+    if os.path.exists(output_excel):
+        os.remove(output_excel)
+    wb.save(output_excel)
+    print(f"✅ 함수 추가 및 엑셀 파일 저장 완료: {output_excel}")
+       
+
+# 실행
+folder_path = r"C:\Users\82109\Desktop\개인\Python Test\끝"
+excel_path =r"C:\Users\82109\Desktop\개인\Python Test"
+output_excel = os.path.join(excel_path, f'{datetime.now().strftime("%Y-%m-%d")}.xlsx')
+datetime.now().strftime("%Y-%m-%d")
+
+extract_info(folder_path, output_excel)
